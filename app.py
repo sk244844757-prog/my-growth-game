@@ -18,11 +18,13 @@ try:
 except ImportError:
     HAS_PLOTLY = False
 
-# --- 1. 全局配置 ---
+# ==========================================
+# 1. 全局配置 & 常量定义
+# ==========================================
 FILE_NAME = 'daily_review_data.csv'
 st.set_page_config(page_title="个人成长游戏系统", layout="wide", page_icon="🎮")
 
-# === CSS 强制启用彩色 Emoji 字体 & 标签样式 ===
+# --- CSS 样式 (强制彩色 Emoji & 组件美化) ---
 st.markdown("""
     <style>
         html, body, [class*="css"], button, div {
@@ -33,6 +35,8 @@ st.markdown("""
             border-radius: 10px;
             padding: 5px;
             background-color: rgba(255, 215, 0, 0.1);
+            font-weight: bold;
+            color: #d4ac0d;
         }
         .big-emoji {
             font-size: 60px;
@@ -132,7 +136,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# JS: 禁用自动填充
+# --- JS 注入 (禁用输入框自动填充) ---
 def inject_custom_js():
     js_code = """
     <script>
@@ -151,7 +155,7 @@ def inject_custom_js():
 
 inject_custom_js()
 
-# 字段定义
+# --- 数据列名定义 ---
 COLS_META    = ['具体时间', '地点', '天气', '温度']
 COLS_READING = ['阅读数据_JSON', '已读列表_JSON'] 
 COLS_MORNING = ['晨_学习', '晨_锻炼', '晨_娱乐', '晨_冥想', '晨_反思']
@@ -167,15 +171,15 @@ COLS_LOOT    = ['每日奇遇_JSON', '卡牌掉落_JSON']
 ALL_COLUMNS = COLS_BASE + COLS_STATS + COLS_META + COLS_ENERGY + COLS_READING + \
               COLS_MORNING + COLS_DAY + COLS_NIGHT + COLS_CHECKS + COLS_LOOT
 
-# 常量
-WEA_OPTS = ['晴', '多云', '阴', '小雨', '中雨', '大雨', '雪', '雾', '霾', '手动输入']
+# --- 映射字典 ---
 LABEL_MAP = {
     "学习": "学习/输入", "锻炼": "锻炼/活动", "娱乐": "娱乐/游戏", "冥想": "冥想/休息", "反思": "反思/梳理",
     "收获": "收获/做对", "感受": "感受/体验", "失误": "失误/问题",
     "Check": "(已打卡)"
 }
+WEA_OPTS = ['晴', '多云', '阴', '小雨', '中雨', '大雨', '雪', '雾', '霾', '手动输入']
 
-# --- 1. 塔罗牌数据 (78张) ---
+# --- 塔罗牌数据 (78张全集) ---
 MAJOR_ARCANA = [
     {"id": 0, "name": "愚者", "en": "The Fool", "roman": "0", "rarity": "SSR", "prob": "1%", "icon": "🃏", "desc": "无限的可能性，新的开始", "group": "大阿卡纳"},
     {"id": 1, "name": "魔术师", "en": "The Magician", "roman": "I", "rarity": "SR", "prob": "5%", "icon": "🪄", "desc": "创造力，掌握资源", "group": "大阿卡纳"},
@@ -815,20 +819,30 @@ def equip_badge_callback(badge_json_str):
     try:
         df = load_data()
         if not df.empty:
-            idx = df.index[-1]
-            current_wear_str = df.at[idx, '佩戴成就_JSON']
-            if current_wear_str == badge_json_str:
+            # 修复核心：始终更新时间轴上的最后一天（最新状态）
+            # 先将日期转为 datetime 以确保排序正确
+            df['日期_dt'] = pd.to_datetime(df['日期'], errors='coerce')
+            df = df.sort_values('日期_dt')
+            
+            last_idx = df.index[-1]
+            
+            # 切换逻辑
+            current_wear = df.at[last_idx, '佩戴成就_JSON']
+            if current_wear == badge_json_str:
                 new_wear = "{}"
                 msg = "已摘下勋章"
             else:
                 new_wear = badge_json_str
                 msg = "勋章佩戴成功！"
-            df.at[idx, '佩戴成就_JSON'] = new_wear
+            
+            df.at[last_idx, '佩戴成就_JSON'] = new_wear
+            
             if '日期_dt' in df.columns: del df['日期_dt']
             df.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
             st.toast(msg)
-            time.sleep(0.1)
-    except: pass
+            time.sleep(0.5)
+    except Exception as e:
+        st.error(f"佩戴失败: {e}")
 
 def set_gallery_tab(tab_name):
     st.session_state.gallery_tab = tab_name
@@ -862,7 +876,7 @@ with st.sidebar:
             user_base_url = default_base
             user_model = default_model
         
-        if st.button("测试连接", icon="📶"):
+        if st.button("测试连接", icon=":material/wifi:"):
             if not user_api_key:
                 st.error("请先填写 Key")
             else:
@@ -959,137 +973,142 @@ with st.sidebar:
         st.session_state.defaults = defaults
         st.session_state.default_time_obj = default_time_obj
 
+    # 3. 移动端输入优化：Tab 0
+    # 为了优化手机体验，我们把输入区搬到主界面第一个 Tab
+    
     curr_defs = st.session_state.get('defaults', {c: "" for c in ALL_COLUMNS})
     curr_time_obj = st.session_state.get('default_time_obj', datetime.now().time())
 
-    col_t1, col_t2 = st.columns([1, 1])
-    with col_t1: 
-        default_idx = get_nearest_time_index(curr_time_obj)
-        select_time_str = st.selectbox("时间 (晚->早)", TIME_OPTIONS, index=default_idx, key="time_picker")
-    with col_t2: tmp_val = st.text_input("温度", placeholder="25℃", key="tmp_input")
-    
-    col_e1, col_e2 = st.columns(2)
-    with col_e1: loc_val = st.text_input("地点", key="loc_input")
-    with col_e2: 
-        wea_sel = st.selectbox("天气", WEA_OPTS, key="wea_select")
-        if wea_sel == '手动输入':
-            wea_val = st.text_input("输入天气", key="wea_manual")
-        else:
-            wea_val = wea_sel
-
-    st.markdown("---")
-    st.subheader("能量状态")
-    s_start = st.slider("起床状态", 0, 100, int(curr_defs.get('初始状态', 60)))
-    c_s1, c_s2 = st.columns(2)
-    with c_s1: reason_start = st.text_input("感受/原因", key="reason_start")
-    with c_s2: action_start = st.text_input("点赞/改善", key="action_start")
-    st.markdown("")
-    s_end = st.slider("结算状态", 0, 100, int(curr_defs.get('结算状态', 80)))
-    c_e1, c_e2 = st.columns(2)
-    with c_e1: reason_end = st.text_input("感受/原因", key="reason_end")
-    with c_e2: action_end = st.text_input("点赞/改善", key="action_end")
-
-    st.markdown("---")
-    with st.expander("最近在读 (书籍管理)", expanded=True):
-        if not st.session_state.reading_list: st.info("暂无")
-        else:
-            del_idx = []
-            for i, b in enumerate(st.session_state.reading_list):
-                st.markdown(f"**{b['name']}**")
-                c1, c2 = st.columns([2,1])
-                with c1:
-                    nc = st.number_input("当前页码", 0, int(b['total']), int(b['current']), key=f"p_{i}_{select_date}")
-                    st.session_state.reading_list[i]['current'] = nc
-                with c2:
-                    pct = 0
-                    if b['total']>0: pct = nc/b['total']
-                    st.caption(f"进度: {pct:.1%}")
-                if pct >= 0.9: st.checkbox("标记为已读完 (结算时归档)", key=f"finish_{i}_{select_date}")
-                st.session_state.reading_list[i]['note'] = st.text_area("阅读感悟", b['note'], height=50, key=f"n_{i}_{select_date}")
-                if st.button("移除", key=f"d_{i}", icon="🗑️"): del_idx.append(i)
-                st.markdown("---")
-            if del_idx:
-                for x in sorted(del_idx, reverse=True): del st.session_state.reading_list[x]
-                st.rerun()
+    # 将输入控件封装成函数，以便在 Tab 中调用
+    def render_input_area():
+        col_t1, col_t2 = st.columns([1, 1])
+        with col_t1: 
+            default_idx = get_nearest_time_index(curr_time_obj)
+            select_time_str = st.selectbox("时间 (晚->早)", TIME_OPTIONS, index=default_idx, key="time_picker")
+        with col_t2: st.text_input("温度", placeholder="25℃", key="tmp_input")
         
-        st.caption("添加新书")
-        bn = st.text_input("书名", key="new_b")
-        c1, c2 = st.columns(2)
-        with c1: bt = st.number_input("总页数", 0, step=1, key="new_t")
-        with c2: bc = st.number_input("当前页", 0, step=1, key="new_c")
-        if st.button("添加", icon="➕"):
-            if bn and bt>0:
-                st.session_state.reading_list.append({"name":bn, "total":bt, "current":bc, "note":""})
-                st.rerun()
+        col_e1, col_e2 = st.columns(2)
+        with col_e1: st.text_input("地点", key="loc_input")
+        with col_e2: 
+            wea_sel = st.selectbox("天气", WEA_OPTS, key="wea_select")
+            if wea_sel == '手动输入':
+                st.text_input("输入天气", key="wea_manual")
 
-    def render_check_input(label, txt_key, chk_key):
-        c1, c2 = st.columns([5, 1])
-        with c1: t = st.text_area(label, height=68, key=txt_key)
-        if t and t.strip(): st.session_state[chk_key] = True
-        with c2: 
-            st.write(""); st.write("")
-            c = st.checkbox("打卡", key=chk_key)
-        return t, str(c)
+        st.markdown("---")
+        st.subheader("能量状态")
+        s_start = st.slider("起床状态", 0, 100, int(curr_defs.get('初始状态', 60)))
+        c_s1, c_s2 = st.columns(2)
+        with c_s1: reason_start = st.text_input("感受/原因", key="reason_start")
+        with c_s2: action_start = st.text_input("点赞/改善", key="action_start")
+        st.markdown("")
+        s_end = st.slider("结算状态", 0, 100, int(curr_defs.get('结算状态', 80)))
+        c_e1, c_e2 = st.columns(2)
+        with c_e1: reason_end = st.text_input("感受/原因", key="reason_end")
+        with c_e2: action_end = st.text_input("点赞/改善", key="action_end")
 
-    input_data = {}
-    with st.expander("一、晨间复盘", expanded=True):
-        input_data['晨_学习'] = st.text_area("学习/输入", height=68, key="mk1")
-        input_data['晨_锻炼'], input_data['晨_锻炼_Check'] = render_check_input("锻炼/活动", "mk2", "chk_m_ex")
-        input_data['晨_娱乐'], input_data['晨_娱乐_Check'] = render_check_input("娱乐/游戏", "mk3", "chk_m_en")
-        input_data['晨_冥想'], input_data['晨_冥想_Check'] = render_check_input("冥想/休息", "mk4", "chk_m_me")
-        input_data['晨_反思'] = st.text_area("反思/梳理", height=68, key="mk5")
-
-    with st.expander("二、白天复盘", expanded=True):
-        input_data['昼_收获'] = st.text_area("收获/做对", height=68, key="dk1")
-        input_data['昼_感受'] = st.text_area("感受/体验", height=68, key="dk2")
-        input_data['昼_失误'] = st.text_area("失误/问题", height=68, key="dk3")
-
-    with st.expander("三、晚间复盘", expanded=True):
-        input_data['晚_学习'] = st.text_area("学习/输入", height=68, key="nk1")
-        input_data['晚_锻炼'], input_data['晚_锻炼_Check'] = render_check_input("锻炼/活动", "nk2", "chk_n_ex")
-        input_data['晚_娱乐'], input_data['晚_娱乐_Check'] = render_check_input("娱乐/游戏", "nk3", "chk_n_en")
-        input_data['晚_冥想'], input_data['晚_冥想_Check'] = render_check_input("冥想/休息", "nk4", "chk_n_me")
-        input_data['晚_反思'] = st.text_area("反思/梳理", height=68, key="nk5")
-
-    st.markdown("---")
-    achieve = st.text_input("每日总结 (必填)", placeholder="说说今天...", key="achieve_input")
-    
-    if st.button("💾 存档 (计算属性)", type="primary", icon="💾"):
-        if achieve:
-            active_books = []
-            finished_books = []
-            old_finished = []
-            if '已读列表_JSON' in curr_defs and curr_defs['已读列表_JSON']:
-                try: old_finished = json.loads(curr_defs['已读列表_JSON'])
-                except: pass
-
-            for i, book in enumerate(st.session_state.reading_list):
-                if st.session_state.get(f"finish_{i}_{select_date}", False):
-                    book['finish_date'] = str(select_date)
-                    finished_books.append(book)
-                else:
-                    active_books.append(book)
+        st.markdown("---")
+        with st.expander("最近在读 (书籍管理)", expanded=True):
+            if not st.session_state.reading_list: st.info("暂无")
+            else:
+                del_idx = []
+                for i, b in enumerate(st.session_state.reading_list):
+                    st.markdown(f"**{b['name']}**")
+                    c1, c2 = st.columns([2,1])
+                    with c1:
+                        nc = st.number_input("当前页码", 0, int(b['total']), int(b['current']), key=f"p_{i}_{select_date}")
+                        st.session_state.reading_list[i]['current'] = nc
+                    with c2:
+                        pct = 0
+                        if b['total']>0: pct = nc/b['total']
+                        st.caption(f"进度: {pct:.1%}")
+                    if pct >= 0.9: st.checkbox("标记为已读完 (结算时归档)", key=f"finish_{i}_{select_date}")
+                    st.session_state.reading_list[i]['note'] = st.text_area("阅读感悟", b['note'], height=50, key=f"n_{i}_{select_date}")
+                    if st.button("移除", key=f"d_{i}", icon=":material/delete:"): del_idx.append(i)
+                    st.markdown("---")
+                if del_idx:
+                    for x in sorted(del_idx, reverse=True): del st.session_state.reading_list[x]
+                    st.rerun()
             
-            st.session_state.reading_list = active_books
-            final_finished = old_finished + finished_books
+            st.caption("添加新书")
+            bn = st.text_input("书名", key="new_b")
+            c1, c2 = st.columns(2)
+            with c1: bt = st.number_input("总页数", 0, step=1, key="new_t")
+            with c2: bc = st.number_input("当前页", 0, step=1, key="new_c")
+            if st.button("添加", icon=":material/add:"):
+                if bn and bt>0:
+                    st.session_state.reading_list.append({"name":bn, "total":bt, "current":bc, "note":""})
+                    st.rerun()
 
-            bj = json.dumps(active_books, ensure_ascii=False)
-            fbj = json.dumps(final_finished, ensure_ascii=False)
+        def render_check_input(label, txt_key, chk_key):
+            c1, c2 = st.columns([5, 1])
+            with c1: t = st.text_area(label, height=68, key=txt_key)
+            if t and t.strip(): st.session_state[chk_key] = True
+            with c2: 
+                st.write(""); st.write("")
+                c = st.checkbox("打卡", key=chk_key)
+            return t, str(c)
 
-            final_d = {
-                '日期': select_date, '具体时间': str(select_time_str), '地点': loc_val, '天气': wea_val, '温度': tmp_val,
-                '初始状态': s_start, '结算状态': s_end, 
-                '初始_感受': reason_start, '初始_点赞': action_start,
-                '结算_感受': reason_end,   '结算_点赞': action_end,
-                '阅读数据_JSON': bj, '已读列表_JSON': fbj, '每日总结': achieve, **input_data
-            }
-            
-            if save_record(final_d, ai_config_pack):
-                st.success("✅ 存档成功")
-                if finished_books: st.balloons()
-                st.rerun()
-        else:
-            st.warning("请填写【每日总结】")
+        input_data = {}
+        with st.expander("一、晨间复盘", expanded=True):
+            input_data['晨_学习'] = st.text_area("学习/输入", height=68, key="mk1")
+            input_data['晨_锻炼'], input_data['晨_锻炼_Check'] = render_check_input("锻炼/活动", "mk2", "chk_m_ex")
+            input_data['晨_娱乐'], input_data['晨_娱乐_Check'] = render_check_input("娱乐/游戏", "mk3", "chk_m_en")
+            input_data['晨_冥想'], input_data['晨_冥想_Check'] = render_check_input("冥想/休息", "mk4", "chk_m_me")
+            input_data['晨_反思'] = st.text_area("反思/梳理", height=68, key="mk5")
+
+        with st.expander("二、白天复盘", expanded=True):
+            input_data['昼_收获'] = st.text_area("收获/做对", height=68, key="dk1")
+            input_data['昼_感受'] = st.text_area("感受/体验", height=68, key="dk2")
+            input_data['昼_失误'] = st.text_area("失误/问题", height=68, key="dk3")
+
+        with st.expander("三、晚间复盘", expanded=True):
+            input_data['晚_学习'] = st.text_area("学习/输入", height=68, key="nk1")
+            input_data['晚_锻炼'], input_data['晚_锻炼_Check'] = render_check_input("锻炼/活动", "nk2", "chk_n_ex")
+            input_data['晚_娱乐'], input_data['晚_娱乐_Check'] = render_check_input("娱乐/游戏", "nk3", "chk_n_en")
+            input_data['晚_冥想'], input_data['晚_冥想_Check'] = render_check_input("冥想/休息", "nk4", "chk_n_me")
+            input_data['晚_反思'] = st.text_area("反思/梳理", height=68, key="nk5")
+
+        st.markdown("---")
+        achieve = st.text_input("每日总结 (必填)", placeholder="说说今天...", key="achieve_input")
+        
+        if st.button("💾 存档 (计算属性)", type="primary", icon=":material/save:"):
+            if achieve:
+                active_books = []
+                finished_books = []
+                old_finished = []
+                if '已读列表_JSON' in curr_defs and curr_defs['已读列表_JSON']:
+                    try: old_finished = json.loads(curr_defs['已读列表_JSON'])
+                    except: pass
+
+                for i, book in enumerate(st.session_state.reading_list):
+                    if st.session_state.get(f"finish_{i}_{select_date}", False):
+                        book['finish_date'] = str(select_date)
+                        finished_books.append(book)
+                    else:
+                        active_books.append(book)
+                
+                st.session_state.reading_list = active_books
+                final_finished = old_finished + finished_books
+
+                bj = json.dumps(active_books, ensure_ascii=False)
+                fbj = json.dumps(final_finished, ensure_ascii=False)
+
+                final_d = {
+                    '日期': select_date, '具体时间': str(select_time_str), '地点': st.session_state.loc_input, 
+                    '天气': st.session_state.wea_manual if st.session_state.wea_select == '手动输入' else st.session_state.wea_select, 
+                    '温度': st.session_state.tmp_input,
+                    '初始状态': s_start, '结算状态': s_end, 
+                    '初始_感受': reason_start, '初始_点赞': action_start,
+                    '结算_感受': reason_end,   '结算_点赞': action_end,
+                    '阅读数据_JSON': bj, '已读列表_JSON': fbj, '每日总结': achieve, **input_data
+                }
+                
+                if save_record(final_d, ai_config_pack):
+                    st.success("✅ 存档成功")
+                    if finished_books: st.balloons()
+                    st.rerun()
+            else:
+                st.warning("请填写【每日总结】")
 
 # --- 4. 主页面 ---
 st.title("角色属性面板")
@@ -1106,7 +1125,11 @@ else:
         df = df.sort_values('日期')
     except: pass
 
-    tab1, tab2, tab3, tab4 = st.tabs(["属性看板", "冒险记录", "🔮 灵魂之镜", "皇家宝库"])
+    tab0, tab1, tab2, tab3, tab4 = st.tabs(["📝 每日复盘", "📊 属性看板", "🗺️ 冒险记录", "🔮 灵魂之镜", "🏛️ 皇家宝库"])
+
+    # === Tab 0: 每日复盘 (输入区) ===
+    with tab0:
+        render_input_area()
 
     # === Tab 1: 属性看板 ===
     with tab1:
@@ -1141,8 +1164,9 @@ else:
             
         equipped_badge = ""
         try:
-            # 核心修复：读取时如果为空字符串则使用默认 {}
-            wear_json = df.iloc[-1].get('佩戴成就_JSON', '{}')
+            # 修复逻辑：读取最新数据
+            df_sorted = df.sort_values('日期_dt')
+            wear_json = df_sorted.iloc[-1].get('佩戴成就_JSON', '{}')
             if not wear_json or wear_json == "nan": wear_json = "{}"
             latest_wear = json.loads(wear_json)
             if latest_wear:
@@ -1276,34 +1300,6 @@ else:
                     st.button(btn_label, key="c_trivia", icon="🧩", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'trivia'))
 
         st.divider()
-        # === 已学技能 (完结书籍) ===
-        st.subheader("已学技能 (完结书籍)")
-        finished_lib = []
-        for _, r in df.iterrows():
-            try:
-                for b in json.loads(r.get('已读列表_JSON', '[]')):
-                    if not any(fb['name'] == b['name'] for fb in finished_lib):
-                        finished_lib.append(b)
-            except: pass
-        if finished_lib:
-            for book in finished_lib:
-                with st.expander(f"《{book['name']}》 (完结于 {book.get('finish_date','?')})"):
-                    b_hist_df = get_book_history(df, book['name'])
-                    if not b_hist_df.empty:
-                        c_stat, c_chart = st.columns([1, 2])
-                        with c_stat:
-                            st.write(f"阅读天数: {len(b_hist_df)}")
-                            st.write(f"感悟条数: {len(b_hist_df[b_hist_df['感悟']!=''])}")
-                        with c_chart:
-                            chart = alt.Chart(b_hist_df).mark_line(point=True).encode(x=alt.X('日期_dt:T',axis=alt.Axis(format='%m-%d')),y='页数:Q').properties(height=200)
-                            st.altair_chart(chart, use_container_width=True)
-                        st.caption("感悟时间轴:")
-                        for _, r in b_hist_df.iterrows():
-                            if r['感悟']: st.text(f"{r['日期_dt'].strftime('%m-%d')}: {r['感悟']}")
-        else:
-            st.caption("暂无完结书籍")
-
-        st.divider()
         st.subheader("属性成长趋势")
         df_cum = df.copy()
         for k in COLS_STATS: df_cum[k] = df_cum[k].astype(float).cumsum()
@@ -1393,11 +1389,10 @@ else:
             
             if plot_data:
                 df_cal = pd.DataFrame(plot_data)
-                # 修复：使用 click 选择器并绑定 selection
                 click = alt.selection_point(fields=['date'], name='select_date')
                 
                 hm = alt.Chart(df_cal).mark_rect().encode(
-                    x=alt.X('weekday:O', axis=alt.Axis(labelExpr="['一','二','三','四','五','六','日'][datum.value]", title='')),
+                    x=alt.X('weekday:O', axis=alt.Axis(title=None, labelExpr="['一','二','三','四','五','六','日'][datum.value]")),
                     y=alt.Y('week:O', axis=None),
                     color=alt.condition(
                         'datum.has',
@@ -1407,7 +1402,6 @@ else:
                     tooltip=['date', 'hp']
                 ).add_params(click).properties(height=250, width='container')
                 
-                # 修复：获取 Altair 交互返回值
                 evt = st.altair_chart(hm, use_container_width=True, on_select="rerun")
                 
                 sel_d = None
@@ -1461,7 +1455,7 @@ else:
                                   st.markdown("---")
                                   st.subheader("🌀 深渊凝视记录")
                                   st.write(f"**凝视对象**: {abyss_data.get('boss_name', '未知')}")
-                                  if 'question' in abyss_data:
+                                  if 'question' in abyss_data: # 兼容旧数据，新数据会带
                                        st.caption(f"**试炼问题**: {abyss_data['question']}")
                                   if 'answer' in abyss_data:
                                        st.info(f"**你的回应**: {abyss_data['answer']}")
