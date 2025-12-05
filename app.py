@@ -49,7 +49,7 @@ st.markdown("""
             display: block;
         }
         
-        /* 属性卡片容器 (Grid布局) - 强制同一行 */
+        /* 属性卡片容器 (Grid布局) */
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -58,14 +58,12 @@ st.markdown("""
             width: 100%;
         }
         
-        /* 手机端适配：屏幕变窄时自动调整为3列 */
         @media (max-width: 600px) {
             .stat-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
         }
         
-        /* 单个属性卡片 */
         .stat-card {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -77,14 +75,13 @@ st.markdown("""
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-width: 0; /* 防止内容撑破 */
+            min-width: 0;
         }
         .stat-title { font-size: 12px; color: #6c757d; margin-bottom: 2px; white-space: nowrap; }
         .stat-value { font-size: 16px; font-weight: bold; color: #2c3e50; margin: 0; }
         .stat-delta { font-size: 10px; color: #27ae60; font-weight: bold; }
         .stat-avg   { font-size: 9px; color: #95a5a6; margin-top: 2px; white-space: nowrap; }
         
-        /* 战利品框 */
         .reward-box {
             border: 2px dashed #f1c40f;
             padding: 15px;
@@ -178,29 +175,30 @@ LABEL_MAP = {
     "Check": "(已打卡)"
 }
 
-# --- 塔罗牌数据 (78张) ---
+# --- 塔罗牌数据 (增加概率显示) ---
+# SSR: 1%, SR: 14%, R: 35%, N: 50%
 MAJOR_ARCANA = [
     {"id": 0, "name": "愚者", "en": "The Fool", "roman": "0", "rarity": "SSR", "prob": "1%", "icon": "🃏", "desc": "无限的可能性，新的开始", "group": "大阿卡纳"},
-    {"id": 1, "name": "魔术师", "en": "The Magician", "roman": "I", "rarity": "SR", "prob": "5%", "icon": "🪄", "desc": "创造力，掌握资源", "group": "大阿卡纳"},
-    {"id": 2, "name": "女祭司", "en": "The High Priestess", "roman": "II", "rarity": "SR", "prob": "5%", "icon": "📜", "desc": "直觉，潜意识，智慧", "group": "大阿卡纳"},
-    {"id": 3, "name": "女皇", "en": "The Empress", "roman": "III", "rarity": "SR", "prob": "5%", "icon": "👑", "desc": "丰饶，自然，母性", "group": "大阿卡纳"},
-    {"id": 4, "name": "皇帝", "en": "The Emperor", "roman": "IV", "rarity": "SR", "prob": "5%", "icon": "🤴", "desc": "权威，结构，稳固", "group": "大阿卡纳"},
-    {"id": 5, "name": "教皇", "en": "The Hierophant", "roman": "V", "rarity": "SR", "prob": "5%", "icon": "⛪", "desc": "传统，信仰，指导", "group": "大阿卡纳"},
-    {"id": 6, "name": "恋人", "en": "The Lovers", "roman": "VI", "rarity": "SR", "prob": "5%", "icon": "💑", "desc": "爱，和谐，选择", "group": "大阿卡纳"},
-    {"id": 7, "name": "战车", "en": "The Chariot", "roman": "VII", "rarity": "SR", "prob": "5%", "icon": "🐎", "desc": "意志力，胜利，控制", "group": "大阿卡纳"},
-    {"id": 8, "name": "力量", "en": "Strength", "roman": "VIII", "rarity": "SR", "prob": "5%", "icon": "🦁", "desc": "勇气，耐心，内在力量", "group": "大阿卡纳"},
-    {"id": 9, "name": "隐士", "en": "The Hermit", "roman": "IX", "rarity": "SR", "prob": "5%", "icon": "🕯️", "desc": "内省，孤独，寻求真理", "group": "大阿卡纳"},
+    {"id": 1, "name": "魔术师", "en": "The Magician", "roman": "I", "rarity": "SR", "prob": "14%", "icon": "🪄", "desc": "创造力，掌握资源", "group": "大阿卡纳"},
+    {"id": 2, "name": "女祭司", "en": "The High Priestess", "roman": "II", "rarity": "SR", "prob": "14%", "icon": "📜", "desc": "直觉，潜意识，智慧", "group": "大阿卡纳"},
+    {"id": 3, "name": "女皇", "en": "The Empress", "roman": "III", "rarity": "SR", "prob": "14%", "icon": "👑", "desc": "丰饶，自然，母性", "group": "大阿卡纳"},
+    {"id": 4, "name": "皇帝", "en": "The Emperor", "roman": "IV", "rarity": "SR", "prob": "14%", "icon": "🤴", "desc": "权威，结构，稳固", "group": "大阿卡纳"},
+    {"id": 5, "name": "教皇", "en": "The Hierophant", "roman": "V", "rarity": "SR", "prob": "14%", "icon": "⛪", "desc": "传统，信仰，指导", "group": "大阿卡纳"},
+    {"id": 6, "name": "恋人", "en": "The Lovers", "roman": "VI", "rarity": "SR", "prob": "14%", "icon": "💑", "desc": "爱，和谐，选择", "group": "大阿卡纳"},
+    {"id": 7, "name": "战车", "en": "The Chariot", "roman": "VII", "rarity": "SR", "prob": "14%", "icon": "🐎", "desc": "意志力，胜利，控制", "group": "大阿卡纳"},
+    {"id": 8, "name": "力量", "en": "Strength", "roman": "VIII", "rarity": "SR", "prob": "14%", "icon": "🦁", "desc": "勇气，耐心，内在力量", "group": "大阿卡纳"},
+    {"id": 9, "name": "隐士", "en": "The Hermit", "roman": "IX", "rarity": "SR", "prob": "14%", "icon": "🕯️", "desc": "内省，孤独，寻求真理", "group": "大阿卡纳"},
     {"id": 10, "name": "命运之轮", "en": "Wheel of Fortune", "roman": "X", "rarity": "SSR", "prob": "1%", "icon": "🎡", "desc": "转折点，机遇，循环", "group": "大阿卡纳"},
-    {"id": 11, "name": "正义", "en": "Justice", "roman": "XI", "rarity": "SR", "prob": "5%", "icon": "⚖️", "desc": "公平，真理，因果", "group": "大阿卡纳"},
-    {"id": 12, "name": "倒吊人", "en": "The Hanged Man", "roman": "XII", "rarity": "SR", "prob": "5%", "icon": "🙃", "desc": "牺牲，新视角，等待", "group": "大阿卡纳"},
-    {"id": 13, "name": "死神", "en": "Death", "roman": "XIII", "rarity": "SR", "prob": "5%", "icon": "💀", "desc": "结束，重生，转变", "group": "大阿卡纳"},
-    {"id": 14, "name": "节制", "en": "Temperance", "roman": "XIV", "rarity": "SR", "prob": "5%", "icon": "🏺", "desc": "平衡，耐心，治愈", "group": "大阿卡纳"},
-    {"id": 15, "name": "恶魔", "en": "The Devil", "roman": "XV", "rarity": "SR", "prob": "5%", "icon": "😈", "desc": "束缚，欲望，物质", "group": "大阿卡纳"},
-    {"id": 16, "name": "高塔", "en": "The Tower", "roman": "XVI", "rarity": "SR", "prob": "5%", "icon": "⚡", "desc": "突变，觉醒，破坏", "group": "大阿卡纳"},
-    {"id": 17, "name": "星星", "en": "The Star", "roman": "XVII", "rarity": "SR", "prob": "5%", "icon": "🌟", "desc": "希望，灵感，宁静", "group": "大阿卡纳"},
-    {"id": 18, "name": "月亮", "en": "The Moon", "roman": "XVIII", "rarity": "SR", "prob": "5%", "icon": "🌙", "desc": "幻觉，恐惧，潜意识", "group": "大阿卡纳"},
-    {"id": 19, "name": "太阳", "en": "The Sun", "roman": "XIX", "rarity": "SR", "prob": "5%", "icon": "☀️", "desc": "成功，快乐，活力", "group": "大阿卡纳"},
-    {"id": 20, "name": "审判", "en": "Judgement", "roman": "XX", "rarity": "SR", "prob": "5%", "icon": "📯", "desc": "觉醒，召唤，重生", "group": "大阿卡纳"},
+    {"id": 11, "name": "正义", "en": "Justice", "roman": "XI", "rarity": "SR", "prob": "14%", "icon": "⚖️", "desc": "公平，真理，因果", "group": "大阿卡纳"},
+    {"id": 12, "name": "倒吊人", "en": "The Hanged Man", "roman": "XII", "rarity": "SR", "prob": "14%", "icon": "🙃", "desc": "牺牲，新视角，等待", "group": "大阿卡纳"},
+    {"id": 13, "name": "死神", "en": "Death", "roman": "XIII", "rarity": "SR", "prob": "14%", "icon": "💀", "desc": "结束，重生，转变", "group": "大阿卡纳"},
+    {"id": 14, "name": "节制", "en": "Temperance", "roman": "XIV", "rarity": "SR", "prob": "14%", "icon": "🏺", "desc": "平衡，耐心，治愈", "group": "大阿卡纳"},
+    {"id": 15, "name": "恶魔", "en": "The Devil", "roman": "XV", "rarity": "SR", "prob": "14%", "icon": "😈", "desc": "束缚，欲望，物质", "group": "大阿卡纳"},
+    {"id": 16, "name": "高塔", "en": "The Tower", "roman": "XVI", "rarity": "SR", "prob": "14%", "icon": "⚡", "desc": "突变，觉醒，破坏", "group": "大阿卡纳"},
+    {"id": 17, "name": "星星", "en": "The Star", "roman": "XVII", "rarity": "SR", "prob": "14%", "icon": "🌟", "desc": "希望，灵感，宁静", "group": "大阿卡纳"},
+    {"id": 18, "name": "月亮", "en": "The Moon", "roman": "XVIII", "rarity": "SR", "prob": "14%", "icon": "🌙", "desc": "幻觉，恐惧，潜意识", "group": "大阿卡纳"},
+    {"id": 19, "name": "太阳", "en": "The Sun", "roman": "XIX", "rarity": "SR", "prob": "14%", "icon": "☀️", "desc": "成功，快乐，活力", "group": "大阿卡纳"},
+    {"id": 20, "name": "审判", "en": "Judgement", "roman": "XX", "rarity": "SR", "prob": "14%", "icon": "📯", "desc": "觉醒，召唤，重生", "group": "大阿卡纳"},
     {"id": 21, "name": "世界", "en": "The World", "roman": "XXI", "rarity": "SSR", "prob": "1%", "icon": "🌍", "desc": "圆满，达成，旅程终点", "group": "大阿卡纳"}
 ]
 
@@ -211,20 +209,20 @@ SUITS = [
     {"name": "星币", "en": "Pentacles", "icon": "🪙", "desc": "物质、金钱、工作", "group": "星币"}
 ]
 RANKS = [
-    {"r": "Ace", "n": "王牌", "rarity": "R", "prob": "20%"},
-    {"r": "Two", "n": "二", "rarity": "N", "prob": "60%"},
-    {"r": "Three", "n": "三", "rarity": "N", "prob": "60%"},
-    {"r": "Four", "n": "四", "rarity": "N", "prob": "60%"},
-    {"r": "Five", "n": "五", "rarity": "N", "prob": "60%"},
-    {"r": "Six", "n": "六", "rarity": "N", "prob": "60%"},
-    {"r": "Seven", "n": "七", "rarity": "N", "prob": "60%"},
-    {"r": "Eight", "n": "八", "rarity": "N", "prob": "60%"},
-    {"r": "Nine", "n": "九", "rarity": "N", "prob": "60%"},
-    {"r": "Ten", "n": "十", "rarity": "N", "prob": "60%"},
-    {"r": "Page", "n": "侍从", "rarity": "R", "prob": "20%"},
-    {"r": "Knight", "n": "骑士", "rarity": "R", "prob": "20%"},
-    {"r": "Queen", "n": "王后", "rarity": "R", "prob": "20%"},
-    {"r": "King", "n": "国王", "rarity": "R", "prob": "20%"}
+    {"r": "Ace", "n": "王牌", "rarity": "R", "prob": "35%"},
+    {"r": "Two", "n": "二", "rarity": "N", "prob": "50%"},
+    {"r": "Three", "n": "三", "rarity": "N", "prob": "50%"},
+    {"r": "Four", "n": "四", "rarity": "N", "prob": "50%"},
+    {"r": "Five", "n": "五", "rarity": "N", "prob": "50%"},
+    {"r": "Six", "n": "六", "rarity": "N", "prob": "50%"},
+    {"r": "Seven", "n": "七", "rarity": "N", "prob": "50%"},
+    {"r": "Eight", "n": "八", "rarity": "N", "prob": "50%"},
+    {"r": "Nine", "n": "九", "rarity": "N", "prob": "50%"},
+    {"r": "Ten", "n": "十", "rarity": "N", "prob": "50%"},
+    {"r": "Page", "n": "侍从", "rarity": "R", "prob": "35%"},
+    {"r": "Knight", "n": "骑士", "rarity": "R", "prob": "35%"},
+    {"r": "Queen", "n": "王后", "rarity": "R", "prob": "35%"},
+    {"r": "King", "n": "国王", "rarity": "R", "prob": "35%"}
 ]
 
 MINOR_ARCANA = []
@@ -306,7 +304,7 @@ def get_nearest_time_index(target_time_obj):
     return best_idx
 
 def load_data():
-    """核心数据加载函数"""
+    """核心数据加载函数 - 增强容错与自动填充"""
     if not os.path.exists(FILE_NAME): return pd.DataFrame(columns=ALL_COLUMNS)
     try:
         df = pd.read_csv(FILE_NAME, dtype=str, encoding='utf-8-sig')
@@ -324,7 +322,7 @@ def load_data():
                 elif col == '深渊凝视_JSON': df[col] = "{}"
                 else: df[col] = "" 
         
-        # JSON 列处理
+        # 针对 JSON 列，如果为空字符串，强制设为合法 JSON
         json_dict_cols = ['佩戴成就_JSON', '深渊凝视_JSON', '每日奇遇_JSON']
         json_list_cols = ['卡牌掉落_JSON', '阅读数据_JSON', '已读列表_JSON', '印象标签_JSON']
         
@@ -339,6 +337,7 @@ def load_data():
                 df.loc[df[c] == "", c] = "[]"
 
         df = df.fillna("")
+        
         for col in COLS_STATS:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -374,8 +373,8 @@ def draw_tarot_cards(total_score):
     for _ in range(draw_count):
         rand = random.random()
         if rand < 0.01: rarity = "SSR"
-        elif rand < 0.10: rarity = "SR"
-        elif rand < 0.40: rarity = "R"
+        elif rand < 0.15: rarity = "SR"
+        elif rand < 0.50: rarity = "R"
         else: rarity = "N"
         pool = [c for c in TAROT_DATA if c['rarity'] == rarity]
         if not pool: pool = TAROT_DATA
@@ -385,18 +384,24 @@ def draw_tarot_cards(total_score):
 def draw_boss_card(score):
     """深渊凝视专属抽卡"""
     if score < 60: return None, 0.0
-    ssr_prob = 0.01; sr_prob = 0.10
+
+    ssr_prob = 0.01
+    sr_prob = 0.10
+    
     multiplier = 1.0
     if score >= 95: multiplier = 10.0
     elif score >= 80: multiplier = 5.0
     elif score >= 60: multiplier = 2.0
+    
     current_ssr = min(1.0, ssr_prob * multiplier)
     current_sr = min(1.0, sr_prob * multiplier)
+    
     rand = random.random()
     if rand < current_ssr: rarity = "SSR"
     elif rand < (current_ssr + current_sr): rarity = "SR"
     elif rand < 0.8: rarity = "R"
     else: rarity = "N"
+    
     pool = [c for c in TAROT_DATA if c['rarity'] == rarity]
     if not pool: pool = TAROT_DATA
     return random.choice(pool), multiplier
@@ -408,29 +413,43 @@ def get_ai_analysis_and_score(data_context, current_tags, api_key, base_url, mod
     【任务3：更新玩家印象标签】
     玩家目前的印象标签为：{current_tags}
     请根据今日日记更新标签：
-    1. 忽略主观自夸，只看客观行为。
+    1. 忽略主观自夸，只看客观行为。如果玩家自夸但无行为，给负面标签(如‘盲目自信’)。
     2. **救赎机制**：如果现有标签中包含“xxx-改观中”，请重点检查今日是否有该负面行为。
-       - 如果表现良好，请移除该标签。
-       - 如果表现不好，去掉后缀，变回“xxx”。
+       - 如果表现良好/无此行为，请**移除**该标签（彻底移除）。
+       - 如果表现不好（旧态复萌），请**去掉后缀**，变回“xxx”（如“拖延”）。
     3. 发现新特点则添加。
     4. 保持 3-6 个简练标签。
     """
     prompt = f"""
     你是“灵魂之镜”。请根据玩家日记完成以下任务。
+    
     【任务1：属性评分】
     对5个维度打分（0-5分）：智慧、体质、心力、意志、魅力。
-    评分务必**极其严格**。普通记录仅给 0.5-1 分。只有突破性行为才能给 2-3 分。
+    评分务必**极其严格**。普通/流水账记录仅给 0.5-1 分。只有突破性、高难度的行为才能给 2-3 分。
 
     【任务2：生成每日奇遇 (严禁编造，必须基于真实知识)】
-    1. **智慧符文**：匹配一个真实存在的思维模型或科学定律。
-    2. **吟游诗篇**：引用一句人类历史上的经典文学/电影/名言。
-    3. **异闻碎片**：提供一个与日记名词相关的客观冷知识。
+    1. **智慧符文 (Rune)**：
+       - 提取日记中的一个行为模式或困境。
+       - 匹配一个**真实存在的**思维模型、心理学效应或科学定律（例如：墨菲定律、达克效应、帕金森定律）。
+       - 格式：{{"title": "模型名称", "desc": "标准定义 + 一句话关联日记"}}
+    
+    2. **吟游诗篇 (Poem)**：
+       - 捕捉日记的情感基调。
+       - 引用一句**人类历史上的经典**（文学名著、诗歌、电影台词、名人名言）。**绝对禁止AI自编打油诗**。
+       - 格式：{{"content": "原文", "source": "作者/出处"}}
+    
+    3. **异闻碎片 (Trivia)**：
+       - 提取日记中的一个实体名词（如咖啡、猫、雨、地铁）。
+       - 提供一个与该名词相关的**客观冷知识或历史典故**。内容必须是事实。
+       - 格式：{{"content": "你知道吗？..."}}
 
     {tag_prompt}
+    
     【玩家日记】
     {data_context}
+
     【输出格式】
-    严格JSON: 
+    严格JSON格式：
     {{
         "is_valid": true, 
         "scores": {{"智慧": 0, "体质": 0, "心力": 0, "意志": 0, "魅力": 0}},
@@ -441,6 +460,7 @@ def get_ai_analysis_and_score(data_context, current_tags, api_key, base_url, mod
         }},
         "tags": ["标签1", "标签2"] 
     }}
+    如果内容乱码或无效，设置 "is_valid": false。
     """
     try:
         client = OpenAI(api_key=api_key, base_url=base_url)
@@ -458,6 +478,7 @@ def generate_history_tags(df, ai_config):
     history_text = ""
     for _, r in recent_df.iterrows():
         history_text += f"[{r['日期']}] {r.get('每日总结','')}\n"
+        
     prompt = f"""
     你是“灵魂之镜”。请根据玩家最近的历史复盘，建立印象标签。
     规则：只看客观行为，忽略自夸。提炼 3-6 个简练标签。
@@ -490,6 +511,7 @@ def generate_boss_encounter(df, ai_config, books_list):
     try: latest_tags = json.loads(df.iloc[-1].get('印象标签_JSON', '[]'))
     except: latest_tags = []
     books_str = ", ".join([b['name'] for b in books_list if not b.get('finish_date')])
+
     prompt = f"""
     你是“灵魂之镜”的试炼官。请根据玩家状态生成一个挑战。
     【玩家数据】
@@ -503,9 +525,9 @@ def generate_boss_encounter(df, ai_config, books_list):
     严格JSON: 
     {{
         "type": "demon" 或 "truth",
-        "name": "对象名", 
-        "intro": "描述", 
-        "question": "问题"
+        "name": "凝视对象名称", 
+        "intro": "出场描述（氛围感）", 
+        "question": "挑战问题"
     }}
     """
     try:
@@ -527,7 +549,7 @@ def resolve_boss_battle(question, answer, ai_config, mode):
     严格JSON: 
     {{
         "score": 0, 
-        "comment": "寄语", 
+        "comment": "智者寄语", 
         "exp_distribution": {{"智慧": 0.5, "意志": 1.0}},
         "modify_tag": {{"old": "拖延", "new": "拖延-改观中"}} (可为null),
         "remove_tag": "...",
@@ -558,42 +580,46 @@ def check_early_bird(df):
 def check_and_unlock_achievements(df):
     unlocked = []
     total_days = len(df)
+    
+    # 深渊成就统计
     abyss_count = 0
     for _, r in df.iterrows():
         try:
-            if json.loads(r.get('深渊凝视_JSON', '{}')).get('completed'): abyss_count += 1
+            data = json.loads(r.get('深渊凝视_JSON', '{}'))
+            if data.get('completed'):
+                abyss_count += 1
         except: pass
+
     all_cards = []
     for _, r in df.iterrows():
         try: all_cards.extend(json.loads(r.get('卡牌掉落_JSON', '[]')))
         except: pass
     unique_cards = len(set(c['id'] for c in all_cards))
     
-    # 核心修复：安全检查 target 字段
+    # 修复：成就数据校验 (id specific check)
     for ach in ACHIEVEMENT_DATA:
         is_ok = False
-        # 1. 天数成就
         if ach['type'] == 'days':
-             if 'target' in ach and total_days >= ach['target']: is_ok = True
-        # 2. 深渊成就
+             if total_days >= ach['target']: is_ok = True
         elif ach['type'] == 'abyss':
-             if 'target' in ach and abyss_count >= ach['target']: is_ok = True
-        # 3. 属性成就
+             if abyss_count >= ach['target']: is_ok = True
+        elif ach['type'] == 'cards':
+             if ach['id'] == 'journey': 
+                major_ids = set(range(22))
+                if major_ids.issubset(set(c['id'] for c in all_cards)): is_ok = True
+             elif ach['id'] == 'element_lord': 
+                 # 元素领主：集齐任意一套花色(14张)
+                 wands = set(range(22, 36)); cups = set(range(36, 50)); swords = set(range(50, 64)); pentacles = set(range(64, 78))
+                 collected_ids = set(c['id'] for c in all_cards)
+                 if wands.issubset(collected_ids) or cups.issubset(collected_ids) or swords.issubset(collected_ids) or pentacles.issubset(collected_ids):
+                     is_ok = True
+             elif ach['id'] == 'lucky_one': 
+                if 'SSR' in set(c['rarity'] for c in all_cards): is_ok = True
+             elif ach['id'] == 'card_all':
+                if unique_cards >= 78: is_ok = True
         elif ach['type'] == 'attr' and ach['id'] == 'hex_warrior':
             sums = [df[c].sum() for c in COLS_STATS]
             if all(s > 100 for s in sums): is_ok = True
-        # 4. 卡牌成就 (逻辑分流)
-        elif ach['type'] == 'cards':
-            if ach['id'] == 'journey': # 22张大阿卡纳
-                major_ids = set(range(22))
-                if major_ids.issubset(set(c['id'] for c in all_cards)): is_ok = True
-            elif ach['id'] == 'element_lord': # 任意花色
-                if len(all_cards) >= 14: is_ok = True 
-            elif ach['id'] == 'lucky_one': # SSR
-                if 'SSR' in set(c['rarity'] for c in all_cards): is_ok = True
-            elif ach['id'] == 'card_all': # 全收集
-                if unique_cards >= 78: is_ok = True
-        # 5. 习惯成就
         elif ach['type'] == 'habit':
             if ach['id'] == 'early_bird':
                 if check_early_bird(df): is_ok = True
@@ -601,13 +627,12 @@ def check_and_unlock_achievements(df):
                 m_ex = df['晨_锻炼_Check'].apply(lambda x: str(x)=='True').sum()
                 n_ex = df['晚_锻炼_Check'].apply(lambda x: str(x)=='True').sum()
                 if (m_ex + n_ex) >= 100: is_ok = True
-        # 6. 阅读成就
         elif ach['type'] == 'read':
             read_count = 0
             for _, r in df.iterrows():
                 try: read_count += len(json.loads(r.get('已读列表_JSON', '[]')))
                 except: pass
-            if 'target' in ach and read_count >= ach['target']: is_ok = True
+            if read_count >= ach['target']: is_ok = True
             
         if is_ok: unlocked.append(ach)
     return unlocked
@@ -729,8 +754,10 @@ def equip_badge_callback(badge_json_str):
             df['日期_dt'] = pd.to_datetime(df['日期'], errors='coerce')
             df = df.sort_values('日期_dt')
             idx = df.index[-1]
+            
             current_wear = df.at[idx, '佩戴成就_JSON']
             new_wear = "{}" if current_wear == badge_json_str else badge_json_str
+            
             df.at[idx, '佩戴成就_JSON'] = new_wear
             if '日期_dt' in df.columns: del df['日期_dt']
             df.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
@@ -743,7 +770,7 @@ def reveal_card_callback(card_key):
 
 # --- 2. 侧边栏 ---
 with st.sidebar:
-    st.title("玩家控制台")
+    st.title("🌟 冒险者档案")
     with st.expander("AI 配置", expanded=True):
         ai_provider = st.selectbox("服务商", ["Kimi (月之暗面)", "DeepSeek (深度求索)", "自定义"])
         if ai_provider == "Kimi (月之暗面)":
@@ -954,7 +981,7 @@ with st.sidebar:
                 st.warning("请填写【每日总结】")
 
 # --- 4. 主页面 ---
-st.title("角色属性面板")
+st.title("🌟 命运回响 · 冒险者档案")
 
 df = load_data()
 if df.empty: st.info("请先在左侧建立第一个存档")
@@ -1005,6 +1032,7 @@ else:
             
         equipped_badge = ""
         try:
+            # 修复逻辑：读取最新数据
             df_sorted = df.sort_values('日期_dt')
             wear_json = df_sorted.iloc[-1].get('佩戴成就_JSON', '{}')
             if not wear_json or wear_json == "nan": wear_json = "{}"
@@ -1035,7 +1063,7 @@ else:
 
         total_days = len(df) if len(df) > 0 else 1
         
-        # 修复：移除 HTML 标签间的换行和缩进，避免被识别为代码块
+        # 修复：去除换行符，确保 HTML 被正确渲染
         stat_html = '<div class="stat-grid">'
         attr_keys = [("智慧 (INT)", "智慧"), ("体质 (STR)", "体质"), ("心力 (MEN)", "心力"), ("意志 (WIL)", "意志"), ("魅力 (CHA)", "魅力")]
         for full, short in attr_keys:
@@ -1385,7 +1413,7 @@ else:
                                 st.session_state.boss_battle = boss_data
                                 st.rerun()
 
-    # === Tab 4: 皇家宝库 (UI 修复) ===
+    # === Tab 4: 皇家宝库 ===
     with tab4:
         st.header("皇家宝库")
         
@@ -1399,7 +1427,7 @@ else:
                  curr_name = curr_w.get('name', '')
              except: curr_name = ""
              
-             # 修复：使用 Grid 布局
+             # 修复：去除缩进，压缩 HTML
              ach_html = '<div class="stat-grid">'
              for ach in ACHIEVEMENT_DATA:
                  is_u = ach['id'] in u_ids
@@ -1446,7 +1474,8 @@ else:
                                     st.markdown(f"<div class='big-emoji'>{card['icon']}</div>", unsafe_allow_html=True)
                                     st.markdown(f"<div class='tarot-cn'>{card['name']}</div>", unsafe_allow_html=True)
                                     st.caption(f"{card['en']}")
-                                    st.caption(f"{card['rarity']} | x{count}")
+                                    # 修复：补全稀有度和概率显示
+                                    st.caption(f"{card['rarity']} | {card['prob']} | x{count}")
                                     with st.popover("详情"):
                                          st.write(card['desc'])
                                 else:
@@ -1459,7 +1488,7 @@ else:
             render_gallery_tab("宝剑", t4)
             render_gallery_tab("星币", t5)
         
-        # 3. 智慧典藏 (时光卷轴)
+        # 3. 智慧典藏 (恢复三列 + 默认展开)
         with st.expander("🏛️ 智慧典藏", expanded=True):
             c1, c2, c3 = st.columns(3)
             
