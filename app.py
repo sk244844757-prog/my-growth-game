@@ -19,35 +19,82 @@ except ImportError:
     HAS_PLOTLY = False
 
 # ==========================================
-# 1. 全局配置 & 常量定义
+# 1. 全局配置 & 核心数据
 # ==========================================
 FILE_NAME = 'daily_review_data.csv'
 st.set_page_config(page_title="个人成长游戏系统", layout="wide", page_icon="🎮")
 
-# --- CSS 样式 (强制彩色 Emoji & 组件美化) ---
+# === CSS 样式 ===
 st.markdown("""
     <style>
+        /* 强制优先使用 Emoji 字体 */
         html, body, [class*="css"], button, div {
             font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI", sans-serif !important;
         }
+        
         .badge-worn {
             border: 2px solid #FFD700;
             border-radius: 10px;
-            padding: 5px;
+            padding: 2px 8px;
             background-color: rgba(255, 215, 0, 0.1);
             font-weight: bold;
             color: #d4ac0d;
+            font-size: 0.8em;
         }
+        
         .big-emoji {
             font-size: 60px;
             text-align: center;
             margin-bottom: 10px;
+            display: block;
         }
-        .icon-small {
-            width: 24px; 
-            vertical-align: middle; 
-            margin-right: 5px;
+        
+        /* 属性卡片容器 (Grid布局) - 强制同一行 */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+            width: 100%;
         }
+        
+        /* 手机端适配：屏幕变窄时自动调整为3列 */
+        @media (max-width: 600px) {
+            .stat-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* 单个属性卡片 */
+        .stat-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px 2px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-width: 0; /* 防止内容撑破 */
+        }
+        .stat-title { font-size: 12px; color: #6c757d; margin-bottom: 2px; white-space: nowrap; }
+        .stat-value { font-size: 16px; font-weight: bold; color: #2c3e50; margin: 0; }
+        .stat-delta { font-size: 10px; color: #27ae60; font-weight: bold; }
+        .stat-avg   { font-size: 9px; color: #95a5a6; margin-top: 2px; white-space: nowrap; }
+        
+        /* 战利品框 */
+        .reward-box {
+            border: 2px dashed #f1c40f;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: rgba(241, 196, 15, 0.1);
+            text-align: center;
+            margin: 10px 0;
+        }
+        .reward-val { font-size: 24px; font-weight: bold; color: #d35400; }
+        
         .tag-container {
             display: flex;
             flex-wrap: wrap;
@@ -65,78 +112,30 @@ st.markdown("""
             border: 1px solid #d2e3fc;
             font-size: 14px;
             font-weight: 500;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        /* Boss 战样式 */
+        
+        /* Boss 战 */
         .boss-container-demon {
-            border: 2px solid #8e44ad;
-            border-radius: 10px;
-            padding: 20px;
-            background-color: rgba(142, 68, 173, 0.05);
-            margin-bottom: 20px;
+            border: 2px solid #8e44ad; border-radius: 10px; padding: 20px;
+            background-color: rgba(142, 68, 173, 0.05); margin-bottom: 20px;
         }
-        .boss-title-demon {
-            color: #8e44ad;
-            font-size: 24px;
-            font-weight: bold;
-        }
+        .boss-title-demon { color: #8e44ad; font-size: 24px; font-weight: bold; }
+        
         .boss-container-truth {
-            border: 2px solid #2980b9;
-            border-radius: 10px;
-            padding: 20px;
-            background-color: rgba(41, 128, 185, 0.05);
-            margin-bottom: 20px;
+            border: 2px solid #2980b9; border-radius: 10px; padding: 20px;
+            background-color: rgba(41, 128, 185, 0.05); margin-bottom: 20px;
         }
-        .boss-title-truth {
-            color: #2980b9;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .reward-box {
-            border: 2px dashed #f1c40f;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: rgba(241, 196, 15, 0.1);
-            text-align: center;
-            margin: 10px 0;
-        }
-        .reward-val {
-            font-size: 24px;
-            font-weight: bold;
-            color: #d35400;
-        }
-        /* 塔罗牌样式 */
-        .tarot-roman {
-            font-family: 'Times New Roman', serif;
-            font-size: 14px;
-            color: #888;
-            text-align: center;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-        .tarot-en {
-            font-family: 'Georgia', serif;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 0px;
-        }
-        .tarot-cn {
-            font-size: 16px;
-            text-align: center;
-            color: #555;
-            margin-bottom: 10px;
-        }
-        .tarot-meta {
-            font-size: 12px;
-            text-align: center;
-            color: #999;
-            margin-top: 5px;
-        }
+        .boss-title-truth { color: #2980b9; font-size: 24px; font-weight: bold; }
+        
+        /* 塔罗牌文本 */
+        .tarot-roman { font-family: 'Times New Roman', serif; font-size: 12px; color: #888; text-align: center; }
+        .tarot-en { font-family: 'Georgia', serif; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 0px; }
+        .tarot-cn { font-size: 16px; text-align: center; color: #555; margin-bottom: 5px; font-weight: bold; }
+        .tarot-meta { font-size: 11px; text-align: center; color: #999; margin-top: 2px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- JS 注入 (禁用输入框自动填充) ---
+# --- JS 注入 ---
 def inject_custom_js():
     js_code = """
     <script>
@@ -171,15 +170,15 @@ COLS_LOOT    = ['每日奇遇_JSON', '卡牌掉落_JSON']
 ALL_COLUMNS = COLS_BASE + COLS_STATS + COLS_META + COLS_ENERGY + COLS_READING + \
               COLS_MORNING + COLS_DAY + COLS_NIGHT + COLS_CHECKS + COLS_LOOT
 
-# --- 映射字典 ---
+# --- 常量 ---
+WEA_OPTS = ['晴', '多云', '阴', '小雨', '中雨', '大雨', '雪', '雾', '霾', '手动输入']
 LABEL_MAP = {
     "学习": "学习/输入", "锻炼": "锻炼/活动", "娱乐": "娱乐/游戏", "冥想": "冥想/休息", "反思": "反思/梳理",
     "收获": "收获/做对", "感受": "感受/体验", "失误": "失误/问题",
     "Check": "(已打卡)"
 }
-WEA_OPTS = ['晴', '多云', '阴', '小雨', '中雨', '大雨', '雪', '雾', '霾', '手动输入']
 
-# --- 塔罗牌数据 (78张全集) ---
+# --- 塔罗牌数据 (78张) ---
 MAJOR_ARCANA = [
     {"id": 0, "name": "愚者", "en": "The Fool", "roman": "0", "rarity": "SSR", "prob": "1%", "icon": "🃏", "desc": "无限的可能性，新的开始", "group": "大阿卡纳"},
     {"id": 1, "name": "魔术师", "en": "The Magician", "roman": "I", "rarity": "SR", "prob": "5%", "icon": "🪄", "desc": "创造力，掌握资源", "group": "大阿卡纳"},
@@ -265,7 +264,6 @@ ACHIEVEMENT_DATA = [
     {"id": "read_3", "name": "知识求索者", "icon": "🧐", "desc": "完结 3 本书", "target": 3, "type": "read"},
     {"id": "read_10", "name": "博览群书", "icon": "🎓", "desc": "完结 10 本书", "target": 10, "type": "read"},
     {"id": "read_50", "name": "移动图书馆", "icon": "🏛️", "desc": "完结 50 本书", "target": 50, "type": "read"},
-    # 新增深渊成就
     {"id": "abyss_5", "name": "内省萌芽", "icon": "🕯️", "desc": "完成 5 次心灵试炼", "target": 5, "type": "abyss"},
     {"id": "abyss_20", "name": "心智觉醒", "icon": "💡", "desc": "完成 20 次心灵试炼", "target": 20, "type": "abyss"},
     {"id": "abyss_100", "name": "真理贤者", "icon": "🧙‍♂️", "desc": "完成 100 次心灵试炼", "target": 100, "type": "abyss"}
@@ -308,7 +306,7 @@ def get_nearest_time_index(target_time_obj):
     return best_idx
 
 def load_data():
-    """核心数据加载函数 - 增强容错与自动填充"""
+    """核心数据加载函数"""
     if not os.path.exists(FILE_NAME): return pd.DataFrame(columns=ALL_COLUMNS)
     try:
         df = pd.read_csv(FILE_NAME, dtype=str, encoding='utf-8-sig')
@@ -326,15 +324,13 @@ def load_data():
                 elif col == '深渊凝视_JSON': df[col] = "{}"
                 else: df[col] = "" 
         
-        # 针对 JSON 列，如果为空字符串，强制设为合法 JSON
+        # JSON 列处理
         json_dict_cols = ['佩戴成就_JSON', '深渊凝视_JSON', '每日奇遇_JSON']
         json_list_cols = ['卡牌掉落_JSON', '阅读数据_JSON', '已读列表_JSON', '印象标签_JSON']
         
         for c in json_dict_cols:
             if c in df.columns:
-                # 填充 NaN
                 df[c] = df[c].fillna("{}")
-                # 填充空字符串
                 df.loc[df[c] == "", c] = "{}"
         
         for c in json_list_cols:
@@ -343,7 +339,6 @@ def load_data():
                 df.loc[df[c] == "", c] = "[]"
 
         df = df.fillna("")
-        
         for col in COLS_STATS:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -388,26 +383,20 @@ def draw_tarot_cards(total_score):
     return drawn
 
 def draw_boss_card(score):
-    """深渊凝视专属抽卡: 评分低于60则无收益"""
+    """深渊凝视专属抽卡"""
     if score < 60: return None, 0.0
-
-    ssr_prob = 0.01
-    sr_prob = 0.10
-    
+    ssr_prob = 0.01; sr_prob = 0.10
     multiplier = 1.0
     if score >= 95: multiplier = 10.0
     elif score >= 80: multiplier = 5.0
     elif score >= 60: multiplier = 2.0
-    
     current_ssr = min(1.0, ssr_prob * multiplier)
     current_sr = min(1.0, sr_prob * multiplier)
-    
     rand = random.random()
     if rand < current_ssr: rarity = "SSR"
     elif rand < (current_ssr + current_sr): rarity = "SR"
     elif rand < 0.8: rarity = "R"
     else: rarity = "N"
-    
     pool = [c for c in TAROT_DATA if c['rarity'] == rarity]
     if not pool: pool = TAROT_DATA
     return random.choice(pool), multiplier
@@ -419,43 +408,29 @@ def get_ai_analysis_and_score(data_context, current_tags, api_key, base_url, mod
     【任务3：更新玩家印象标签】
     玩家目前的印象标签为：{current_tags}
     请根据今日日记更新标签：
-    1. 忽略主观自夸，只看客观行为。如果玩家自夸但无行为，给负面标签(如‘盲目自信’)。
+    1. 忽略主观自夸，只看客观行为。
     2. **救赎机制**：如果现有标签中包含“xxx-改观中”，请重点检查今日是否有该负面行为。
-       - 如果表现良好/无此行为，请**移除**该标签（彻底移除）。
-       - 如果表现不好（旧态复萌），请**去掉后缀**，变回“xxx”（如“拖延”）。
+       - 如果表现良好，请移除该标签。
+       - 如果表现不好，去掉后缀，变回“xxx”。
     3. 发现新特点则添加。
     4. 保持 3-6 个简练标签。
     """
     prompt = f"""
     你是“灵魂之镜”。请根据玩家日记完成以下任务。
-    
     【任务1：属性评分】
     对5个维度打分（0-5分）：智慧、体质、心力、意志、魅力。
-    评分务必**极其严格**。普通/流水账记录仅给 0.5-1 分。只有突破性、高难度的行为才能给 2-3 分。4-5 分仅限史诗级成就。宁缺毋滥。
+    评分务必**极其严格**。普通记录仅给 0.5-1 分。只有突破性行为才能给 2-3 分。
 
     【任务2：生成每日奇遇 (严禁编造，必须基于真实知识)】
-    1. **智慧符文 (Rune)**：
-       - 提取日记中的一个行为模式或困境。
-       - 匹配一个**真实存在的**思维模型、心理学效应或科学定律（例如：墨菲定律、达克效应、帕金森定律）。
-       - 格式：{{"title": "模型名称", "desc": "标准定义 + 一句话关联日记"}}
-    
-    2. **吟游诗篇 (Poem)**：
-       - 捕捉日记的情感基调。
-       - 引用一句**人类历史上的经典**（文学名著、诗歌、电影台词、名人名言）。**绝对禁止AI自编打油诗**。
-       - 格式：{{"content": "原文", "source": "作者/出处"}}
-    
-    3. **异闻碎片 (Trivia)**：
-       - 提取日记中的一个实体名词（如咖啡、猫、雨、地铁）。
-       - 提供一个与该名词相关的**客观冷知识或历史典故**。内容必须是事实。
-       - 格式：{{"content": "你知道吗？..."}}
+    1. **智慧符文**：匹配一个真实存在的思维模型或科学定律。
+    2. **吟游诗篇**：引用一句人类历史上的经典文学/电影/名言。
+    3. **异闻碎片**：提供一个与日记名词相关的客观冷知识。
 
     {tag_prompt}
-    
     【玩家日记】
     {data_context}
-
     【输出格式】
-    严格JSON格式：
+    严格JSON: 
     {{
         "is_valid": true, 
         "scores": {{"智慧": 0, "体质": 0, "心力": 0, "意志": 0, "魅力": 0}},
@@ -466,7 +441,6 @@ def get_ai_analysis_and_score(data_context, current_tags, api_key, base_url, mod
         }},
         "tags": ["标签1", "标签2"] 
     }}
-    如果内容乱码或无效，设置 "is_valid": false。
     """
     try:
         client = OpenAI(api_key=api_key, base_url=base_url)
@@ -484,7 +458,6 @@ def generate_history_tags(df, ai_config):
     history_text = ""
     for _, r in recent_df.iterrows():
         history_text += f"[{r['日期']}] {r.get('每日总结','')}\n"
-        
     prompt = f"""
     你是“灵魂之镜”。请根据玩家最近的历史复盘，建立印象标签。
     规则：只看客观行为，忽略自夸。提炼 3-6 个简练标签。
@@ -500,7 +473,6 @@ def generate_history_tags(df, ai_config):
         )
         raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
         tags = json.loads(raw).get('tags', [])
-        
         if tags and not df.empty:
             idx = df.index[-1]
             df.at[idx, '印象标签_JSON'] = json.dumps(tags, ensure_ascii=False)
@@ -509,37 +481,31 @@ def generate_history_tags(df, ai_config):
     except: return []
     return []
 
-# === 心灵试炼 (Boss) 逻辑 ===
 def generate_boss_encounter(df, ai_config, books_list):
     if not ai_config: return None
     recent_df = df.sort_values('日期').tail(7)
     txt = ""
     for _, r in recent_df.iterrows():
         txt += f"{r['日期']}: {r.get('每日总结','')}\n"
-    try:
-        latest_tags = json.loads(df.iloc[-1].get('印象标签_JSON', '[]'))
+    try: latest_tags = json.loads(df.iloc[-1].get('印象标签_JSON', '[]'))
     except: latest_tags = []
-    
     books_str = ", ".join([b['name'] for b in books_list if not b.get('finish_date')])
-
     prompt = f"""
     你是“灵魂之镜”的试炼官。请根据玩家状态生成一个挑战。
     【玩家数据】
     近期日记：{txt}
     当前标签：{latest_tags}
     在读书籍：{books_str}
-
     【决策逻辑】
-    1. **心魔试炼 (demon)**：如果玩家有明显的负面标签（如拖延、焦虑、懒惰等），或者近期日记表现不佳，生成一个心魔 BOSS，进行严厉的质问。
-    2. **真理探寻 (truth)**：如果玩家状态良好，或者正在读有深度的书，生成一位智者，结合书籍内容或哲学问题进行苏格拉底式提问。
-
+    1. **心魔试炼 (demon)**：如果玩家有明显的负面标签，生成一个心魔 BOSS，进行严厉的质问。
+    2. **真理探寻 (truth)**：如果玩家状态良好，生成一位智者，结合书籍内容或哲学问题进行苏格拉底式提问。
     【输出格式】
     严格JSON: 
     {{
         "type": "demon" 或 "truth",
-        "name": "凝视对象名称", 
-        "intro": "出场描述（氛围感）", 
-        "question": "挑战问题"
+        "name": "对象名", 
+        "intro": "描述", 
+        "question": "问题"
     }}
     """
     try:
@@ -552,31 +518,16 @@ def generate_boss_encounter(df, ai_config, books_list):
 
 def resolve_boss_battle(question, answer, ai_config, mode):
     if len(answer) < 15: return None 
-
     prompt = f"""
     玩家正在进行心灵试炼（模式：{mode}）。
     问题：{question}
     回答：{answer}
-    
     请评价回答的深度和真诚度（0-100分）。
-    
-    【评分标准】
-    - **必须针对问题具体分析**。
-    - 敷衍/回避/字数过少：<60分。
-    - 深刻反思/逻辑自洽：>80分。
-    
-    【奖励计算】
-    根据回答侧重，分配总计不超过 2.5 分的经验值（最小单位0.5）给：智慧、意志、心力、魅力。
-    
-    【标签变更建议】
-    - 如果是 'demon' 模式且分数>80：建议将相关的负面标签修改为 "xxx-改观中"（在 modify_tag 中返回）。
-    - 否则，按需建议 remove_tag 或 add_tag。
-    
     【输出格式】
     严格JSON: 
     {{
         "score": 0, 
-        "comment": "智者寄语", 
+        "comment": "寄语", 
         "exp_distribution": {{"智慧": 0.5, "意志": 1.0}},
         "modify_tag": {{"old": "拖延", "new": "拖延-改观中"}} (可为null),
         "remove_tag": "...",
@@ -598,10 +549,8 @@ def check_early_bird(df):
         df_sorted = df.sort_values('日期_dt')
         for _, row in df_sorted.iterrows():
             t_str = str(row.get('具体时间', '23:59'))
-            if len(t_str) >= 5 and t_str < "22:00":
-                valid_streak += 1
-            else:
-                valid_streak = 0
+            if len(t_str) >= 5 and t_str < "22:00": valid_streak += 1
+            else: valid_streak = 0
             max_streak = max(max_streak, valid_streak)
         return max_streak >= 21
     except: return False
@@ -609,58 +558,42 @@ def check_early_bird(df):
 def check_and_unlock_achievements(df):
     unlocked = []
     total_days = len(df)
-    
-    # 深渊成就统计
     abyss_count = 0
     for _, r in df.iterrows():
         try:
-            data = json.loads(r.get('深渊凝视_JSON', '{}'))
-            if data.get('completed'):
-                abyss_count += 1
+            if json.loads(r.get('深渊凝视_JSON', '{}')).get('completed'): abyss_count += 1
         except: pass
-
     all_cards = []
     for _, r in df.iterrows():
         try: all_cards.extend(json.loads(r.get('卡牌掉落_JSON', '[]')))
         except: pass
-    owned_ids = set(c['id'] for c in all_cards)
-    owned_rarities = set(c['rarity'] for c in all_cards)
+    unique_cards = len(set(c['id'] for c in all_cards))
     
-    finished_books_count = 0
-    unique_books = set()
-    for _, r in df.iterrows():
-        try:
-            for b in json.loads(r.get('已读列表_JSON', '[]')):
-                if b['name'] not in unique_books:
-                    unique_books.add(b['name'])
-                    finished_books_count += 1
-        except: pass
-
+    # 核心修复：安全检查 target 字段
     for ach in ACHIEVEMENT_DATA:
         is_ok = False
+        # 1. 天数成就
         if ach['type'] == 'days':
-             if total_days >= ach['target']: is_ok = True
+             if 'target' in ach and total_days >= ach['target']: is_ok = True
+        # 2. 深渊成就
         elif ach['type'] == 'abyss':
-             if abyss_count >= ach['target']: is_ok = True
+             if 'target' in ach and abyss_count >= ach['target']: is_ok = True
+        # 3. 属性成就
         elif ach['type'] == 'attr' and ach['id'] == 'hex_warrior':
             sums = [df[c].sum() for c in COLS_STATS]
             if all(s > 100 for s in sums): is_ok = True
+        # 4. 卡牌成就 (逻辑分流)
         elif ach['type'] == 'cards':
-            if ach['id'] == 'journey': 
+            if ach['id'] == 'journey': # 22张大阿卡纳
                 major_ids = set(range(22))
-                if major_ids.issubset(owned_ids): is_ok = True
-            elif ach['id'] == 'element_lord': 
-                wands = set(range(22, 36))
-                cups = set(range(36, 50))
-                swords = set(range(50, 64))
-                pentacles = set(range(64, 78))
-                if wands.issubset(owned_ids) or cups.issubset(owned_ids) or \
-                   swords.issubset(owned_ids) or pentacles.issubset(owned_ids):
-                   is_ok = True
-            elif ach['id'] == 'lucky_one': 
-                if 'SSR' in owned_rarities: is_ok = True
-            elif ach['id'] == 'card_all':
-                if len(owned_ids) >= 78: is_ok = True
+                if major_ids.issubset(set(c['id'] for c in all_cards)): is_ok = True
+            elif ach['id'] == 'element_lord': # 任意花色
+                if len(all_cards) >= 14: is_ok = True 
+            elif ach['id'] == 'lucky_one': # SSR
+                if 'SSR' in set(c['rarity'] for c in all_cards): is_ok = True
+            elif ach['id'] == 'card_all': # 全收集
+                if unique_cards >= 78: is_ok = True
+        # 5. 习惯成就
         elif ach['type'] == 'habit':
             if ach['id'] == 'early_bird':
                 if check_early_bird(df): is_ok = True
@@ -668,8 +601,13 @@ def check_and_unlock_achievements(df):
                 m_ex = df['晨_锻炼_Check'].apply(lambda x: str(x)=='True').sum()
                 n_ex = df['晚_锻炼_Check'].apply(lambda x: str(x)=='True').sum()
                 if (m_ex + n_ex) >= 100: is_ok = True
+        # 6. 阅读成就
         elif ach['type'] == 'read':
-            if finished_books_count >= ach['target']: is_ok = True
+            read_count = 0
+            for _, r in df.iterrows():
+                try: read_count += len(json.loads(r.get('已读列表_JSON', '[]')))
+                except: pass
+            if 'target' in ach and read_count >= ach['target']: is_ok = True
             
         if is_ok: unlocked.append(ach)
     return unlocked
@@ -678,15 +616,11 @@ def save_record(data_dict, ai_config=None):
     scores = {"智慧":0, "体质":0, "心力":0, "意志":0, "魅力":0}
     loot_data = {}
     card_drops = []
-    new_tags = []
-    
     content_len = 0
     for k, v in data_dict.items():
         if isinstance(v, str) and k not in ['日期', '具体时间']: content_len += len(v)
-    
     if ai_config and ai_config.get('key'):
-        if content_len < 5:
-             st.toast("内容过少，未触发AI结算", icon="🚫")
+        if content_len < 5: st.toast("内容过少，未触发AI结算", icon=":material/block:")
         else:
             context = f"总结: {data_dict.get('每日总结','')}\n能量: {data_dict.get('初始状态')}->{data_dict.get('结算状态')}\n"
             for k, v in data_dict.items():
@@ -695,33 +629,22 @@ def save_record(data_dict, ai_config=None):
             if data_dict.get('晨_锻炼_Check') == 'True': context += "晨间锻炼打卡\n"
             
             df_old = load_data()
-            mask = df_old['日期'] != str(data_dict['日期'])
-            if not df_old[mask].empty:
-                 old_tags_json = df_old[mask].iloc[-1].get('印象标签_JSON', '[]')
-                 try: current_tags = json.loads(old_tags_json)
+            if not df_old.empty:
+                 try: current_tags = json.loads(df_old.iloc[-1].get('印象标签_JSON', '[]'))
                  except: current_tags = []
             else: current_tags = []
 
             with st.spinner("🔮 灵魂之镜正在审视你..."):
                 try:
-                    ai_scores, ai_loot, new_tags = get_ai_analysis_and_score(
-                        context, current_tags, ai_config['key'], ai_config['base'], ai_config['model']
-                    )
+                    ai_scores, ai_loot, new_tags = get_ai_analysis_and_score(context, current_tags, ai_config['key'], ai_config['base'], ai_config['model'])
                     if ai_scores:
                         if sum(ai_scores.values()) > 0:
                             scores.update(ai_scores)
-                            msg = "属性更新："
-                            for k, v in scores.items():
-                                if v != 0: msg += f"{k}+{v} "
-                            st.toast(msg, icon="🆙")
+                            st.toast(f"属性更新: {scores}", icon="🆙")
                             if ai_loot: loot_data = ai_loot
                             total_s = sum(scores.values())
                             card_drops = draw_tarot_cards(total_s)
-                            
                             data_dict['印象标签_JSON'] = json.dumps(new_tags, ensure_ascii=False)
-                            if new_tags != current_tags:
-                                st.toast(f"🏷️ 印象更新：{', '.join(new_tags)}", icon="🧠")
-
                         else: st.toast("内容深度不足", icon="😶")
                     else: st.toast("AI 判定无效", icon="🚫")
                 except: pass
@@ -748,10 +671,8 @@ def save_record(data_dict, ai_config=None):
         df_old = load_data()
         mask = df_old['日期'] == str(data_dict['日期'])
         if mask.any(): data_dict['佩戴成就_JSON'] = df_old[mask].iloc[0].get('佩戴成就_JSON', '{}')
-        else:
-            if not df_old.empty:
-                 data_dict['佩戴成就_JSON'] = df_old.iloc[-1].get('佩戴成就_JSON', '{}')
-    
+        elif not df_old.empty: data_dict['佩戴成就_JSON'] = df_old.iloc[-1].get('佩戴成就_JSON', '{}')
+
     if '印象标签_JSON' not in data_dict:
          df_old = load_data()
          mask = df_old['日期'] == str(data_dict['日期'])
@@ -759,31 +680,22 @@ def save_record(data_dict, ai_config=None):
          elif not df_old.empty: data_dict['印象标签_JSON'] = df_old.iloc[-1].get('印象标签_JSON', '[]')
          else: data_dict['印象标签_JSON'] = '[]'
     
-    if '深渊凝视_JSON' not in data_dict:
-        data_dict['深渊凝视_JSON'] = '{}'
+    if '深渊凝视_JSON' not in data_dict: data_dict['深渊凝视_JSON'] = '{}'
 
     df = load_data()
     if '日期_dt' in df.columns: del df['日期_dt']
     target_date = str(data_dict['日期'])
-    if not df.empty:
-        df = df[df['日期'] != target_date]
+    if not df.empty: df = df[df['日期'] != target_date]
     new_row = pd.DataFrame([data_dict])
     df = pd.concat([df, new_row], ignore_index=True)
     
     try:
         df.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
         time.sleep(0.5)
-        
         new_achievements = check_and_unlock_achievements(df)
-        if new_achievements:
-             st.toast(f"🎉 成就检测完成：当前已解锁 {len(new_achievements)} 个勋章", icon="🏆")
+        if new_achievements: st.toast(f"🎉 解锁成就：{len(new_achievements)} 个", icon="🏆")
         return True
-    except PermissionError:
-        st.error("保存失败：请关闭 Excel 文件")
-        return False
-    except OSError:
-        st.error("保存失败")
-        return False
+    except: return False
 
 def call_ai_coach(api_key, base_url, model_name, prompt):
     try:
@@ -801,56 +713,37 @@ def toggle_collection_callback(date_str, loot_type):
         mask_curr = df_curr['日期'] == target_date_str
         if mask_curr.any():
             idx = df_curr[mask_curr].index[0]
-            current_json = df_curr.at[idx, '每日奇遇_JSON']
-            loot = json.loads(current_json)
+            loot = json.loads(df_curr.at[idx, '每日奇遇_JSON'])
             if loot_type not in loot: loot[loot_type] = {}
-            curr_stat = loot[loot_type].get('collected', False)
-            loot[loot_type]['collected'] = not curr_stat
+            loot[loot_type]['collected'] = not loot[loot_type].get('collected', False)
             df_curr.at[idx, '每日奇遇_JSON'] = json.dumps(loot, ensure_ascii=False)
             if '日期_dt' in df_curr.columns: del df_curr['日期_dt']
             df_curr.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
             time.sleep(0.1)
     except: pass
 
-def reveal_card_callback(card_key):
-    st.session_state.card_flipped[card_key] = True
-
 def equip_badge_callback(badge_json_str):
     try:
         df = load_data()
         if not df.empty:
-            # 修复核心：始终更新时间轴上的最后一天（最新状态）
-            # 先将日期转为 datetime 以确保排序正确
             df['日期_dt'] = pd.to_datetime(df['日期'], errors='coerce')
             df = df.sort_values('日期_dt')
-            
-            last_idx = df.index[-1]
-            
-            # 切换逻辑
-            current_wear = df.at[last_idx, '佩戴成就_JSON']
-            if current_wear == badge_json_str:
-                new_wear = "{}"
-                msg = "已摘下勋章"
-            else:
-                new_wear = badge_json_str
-                msg = "勋章佩戴成功！"
-            
-            df.at[last_idx, '佩戴成就_JSON'] = new_wear
-            
+            idx = df.index[-1]
+            current_wear = df.at[idx, '佩戴成就_JSON']
+            new_wear = "{}" if current_wear == badge_json_str else badge_json_str
+            df.at[idx, '佩戴成就_JSON'] = new_wear
             if '日期_dt' in df.columns: del df['日期_dt']
             df.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
-            st.toast(msg)
+            st.toast("佩戴状态更新", icon="🛡️")
             time.sleep(0.5)
-    except Exception as e:
-        st.error(f"佩戴失败: {e}")
+    except: pass
 
-def set_gallery_tab(tab_name):
-    st.session_state.gallery_tab = tab_name
+def reveal_card_callback(card_key):
+    st.session_state.card_flipped[card_key] = True
 
 # --- 2. 侧边栏 ---
 with st.sidebar:
     st.title("玩家控制台")
-    
     with st.expander("AI 配置", expanded=True):
         ai_provider = st.selectbox("服务商", ["Kimi (月之暗面)", "DeepSeek (深度求索)", "自定义"])
         if ai_provider == "Kimi (月之暗面)":
@@ -865,27 +758,22 @@ with st.sidebar:
             default_base = ""
             default_model = ""
             key_help = "OpenAI"
-
         raw_key = st.text_input("API Key", type="password", help=key_help)
         user_api_key = raw_key.strip() if raw_key else ""
-        
         if ai_provider == "自定义":
             user_base_url = st.text_input("Base URL", value=default_base)
             user_model = st.text_input("模型名称", value=default_model)
         else:
             user_base_url = default_base
             user_model = default_model
-        
         if st.button("测试连接", icon=":material/wifi:"):
-            if not user_api_key:
-                st.error("请先填写 Key")
+            if not user_api_key: st.error("请先填写 Key")
             else:
                 try:
                     client = OpenAI(api_key=user_api_key, base_url=user_base_url)
                     client.chat.completions.create(model=user_model, messages=[{"role":"user","content":"Hi"}], max_tokens=5)
                     st.success("连接成功")
                 except Exception as e: st.error(f"失败: {e}")
-
         ai_config_pack = {'key': user_api_key, 'base': user_base_url, 'model': user_model} if user_api_key else None
 
     st.markdown("---")
@@ -895,16 +783,12 @@ with st.sidebar:
     if st.session_state.last_selected_date != select_date:
         st.session_state.last_selected_date = select_date
         st.session_state.reading_list = [] 
-        
         defaults = {col: "" for col in ALL_COLUMNS}
-        defaults['初始状态'] = 60
-        defaults['结算状态'] = 80
+        defaults['初始状态'] = 60; defaults['结算状态'] = 80
         for col in COLS_CHECKS: defaults[col] = False
         default_time_obj = datetime.now().time().replace(second=0, microsecond=0)
-        
         df_check = load_data()
         today_found = False
-        
         if not df_check.empty:
             mask = df_check['日期'] == str(select_date)
             if mask.any():
@@ -913,22 +797,14 @@ with st.sidebar:
                 for col in ALL_COLUMNS:
                     try:
                         val = row[col]
-                        if col in ['初始状态', '结算状态'] + COLS_STATS:
-                            defaults[col] = float(val) if val and val!='nan' else 0
-                        elif col == '阅读数据_JSON':
-                            if val and val.strip(): st.session_state.reading_list = json.loads(val)
-                        elif col.endswith('_Check'):
-                            defaults[col] = True if str(val)=='True' else False
-                        else:
-                            defaults[col] = str(val) if val and val!='nan' else ""
+                        if col in ['初始状态', '结算状态'] + COLS_STATS: defaults[col] = float(val) if val and val!='nan' else 0
+                        elif col == '阅读数据_JSON' and val and val.strip(): st.session_state.reading_list = json.loads(val)
+                        elif col.endswith('_Check'): defaults[col] = True if str(val)=='True' else False
+                        else: defaults[col] = str(val) if val and val!='nan' else ""
                     except: pass
                 if defaults['具体时间']:
-                    try: 
-                        t_str = defaults['具体时间']
-                        if len(t_str)>5: t_str=t_str[:5]
-                        default_time_obj = datetime.strptime(t_str, "%H:%M").time()
+                    try: default_time_obj = datetime.strptime(defaults['具体时间'][:5], "%H:%M").time()
                     except: pass
-
         if not today_found and not df_check.empty:
             df_past = df_check[df_check['日期_dt'].dt.date < select_date].sort_values('日期', ascending=False)
             if not df_past.empty:
@@ -937,74 +813,42 @@ with st.sidebar:
                     lbs = json.loads(latest_row['阅读数据_JSON'])
                     active = [b for b in lbs if not b.get('finish_date')]
                     for b in active: b['note'] = ""
-                    if active:
-                        st.session_state.reading_list = active
-                        st.toast(f"继承书单 from {latest_row['日期']}")
+                    if active: st.session_state.reading_list = active; st.toast(f"继承书单 from {latest_row['日期']}")
                 except: pass
                 defaults['地点'] = latest_row.get('地点', '')
-
-        keys_map = {
-            '地点': 'loc_input', '天气': 'wea_input', '温度': 'tmp_input',
-            '初始_感受': 'reason_start', '初始_点赞': 'action_start',
-            '结算_感受': 'reason_end', '结算_点赞': 'action_end',
-            '晨_学习': 'mk1', '晨_锻炼': 'mk2', '晨_娱乐': 'mk3', '晨_冥想': 'mk4', '晨_反思': 'mk5',
-            '昼_收获': 'dk1', '昼_感受': 'dk2', '昼_失误': 'dk3',
-            '晚_学习': 'nk1', '晚_锻炼': 'nk2', '晚_娱乐': 'nk3', '晚_冥想': 'nk4', '晚_反思': 'nk5',
-            '每日总结': 'achieve_input'
-        }
-        chk_keys_map = {
-            '晨_锻炼_Check': 'chk_m_ex', '晨_娱乐_Check': 'chk_m_en', '晨_冥想_Check': 'chk_m_me',
-            '晚_锻炼_Check': 'chk_n_ex', '晚_娱乐_Check': 'chk_n_en', '晚_冥想_Check': 'chk_n_me'
-        }
-
-        for col, k in keys_map.items(): st.session_state[k] = defaults.get(col, "")
-        for col, k in chk_keys_map.items(): st.session_state[k] = defaults.get(col, False)
-
-        w_val = defaults.get('天气', '')
-        if 'wea_select' not in st.session_state: st.session_state['wea_select'] = '晴'
         
-        if w_val in WEA_OPTS and w_val != '手动输入':
-            st.session_state['wea_select'] = w_val
-            st.session_state['wea_manual'] = ""
-        else:
-            st.session_state['wea_select'] = '手动输入'
-            st.session_state['wea_manual'] = w_val
-
         st.session_state.defaults = defaults
         st.session_state.default_time_obj = default_time_obj
 
-    # 3. 移动端输入优化：Tab 0
-    # 为了优化手机体验，我们把输入区搬到主界面第一个 Tab
-    
     curr_defs = st.session_state.get('defaults', {c: "" for c in ALL_COLUMNS})
     curr_time_obj = st.session_state.get('default_time_obj', datetime.now().time())
 
-    # 将输入控件封装成函数，以便在 Tab 中调用
+    # 封装输入区
     def render_input_area():
         col_t1, col_t2 = st.columns([1, 1])
         with col_t1: 
             default_idx = get_nearest_time_index(curr_time_obj)
             select_time_str = st.selectbox("时间 (晚->早)", TIME_OPTIONS, index=default_idx, key="time_picker")
-        with col_t2: st.text_input("温度", placeholder="25℃", key="tmp_input")
-        
+        with col_t2: st.text_input("温度", value=curr_defs.get('温度',''), placeholder="25℃", key="tmp_input")
         col_e1, col_e2 = st.columns(2)
-        with col_e1: st.text_input("地点", key="loc_input")
+        with col_e1: st.text_input("地点", value=curr_defs.get('地点',''), key="loc_input")
         with col_e2: 
+            # 修复：移除 selectbox 的 index 参数，避免与 key 冲突
             wea_sel = st.selectbox("天气", WEA_OPTS, key="wea_select")
             if wea_sel == '手动输入':
                 st.text_input("输入天气", key="wea_manual")
-
+        
         st.markdown("---")
         st.subheader("能量状态")
         s_start = st.slider("起床状态", 0, 100, int(curr_defs.get('初始状态', 60)))
         c_s1, c_s2 = st.columns(2)
-        with c_s1: reason_start = st.text_input("感受/原因", key="reason_start")
-        with c_s2: action_start = st.text_input("点赞/改善", key="action_start")
+        with c_s1: reason_start = st.text_input("感受/原因", value=curr_defs.get('初始_感受',''), key="reason_start")
+        with c_s2: action_start = st.text_input("点赞/改善", value=curr_defs.get('初始_点赞',''), key="action_start")
         st.markdown("")
         s_end = st.slider("结算状态", 0, 100, int(curr_defs.get('结算状态', 80)))
         c_e1, c_e2 = st.columns(2)
-        with c_e1: reason_end = st.text_input("感受/原因", key="reason_end")
-        with c_e2: action_end = st.text_input("点赞/改善", key="action_end")
+        with c_e1: reason_end = st.text_input("感受/原因", value=curr_defs.get('结算_感受',''), key="reason_end")
+        with c_e2: action_end = st.text_input("点赞/改善", value=curr_defs.get('结算_点赞',''), key="action_end")
 
         st.markdown("---")
         with st.expander("最近在读 (书籍管理)", expanded=True):
@@ -1028,7 +872,6 @@ with st.sidebar:
                 if del_idx:
                     for x in sorted(del_idx, reverse=True): del st.session_state.reading_list[x]
                     st.rerun()
-            
             st.caption("添加新书")
             bn = st.text_input("书名", key="new_b")
             c1, c2 = st.columns(2)
@@ -1114,14 +957,12 @@ with st.sidebar:
 st.title("角色属性面板")
 
 df = load_data()
-if df.empty:
-    st.info("请先在左侧建立第一个存档")
+if df.empty: st.info("请先在左侧建立第一个存档")
 else:
     try:
         df['日期'] = pd.to_datetime(df['日期'])
         num_cols = ['初始状态', '结算状态'] + COLS_STATS
-        for c in num_cols:
-            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+        for c in num_cols: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
         df = df.sort_values('日期')
     except: pass
 
@@ -1164,7 +1005,6 @@ else:
             
         equipped_badge = ""
         try:
-            # 修复逻辑：读取最新数据
             df_sorted = df.sort_values('日期_dt')
             wear_json = df_sorted.iloc[-1].get('佩戴成就_JSON', '{}')
             if not wear_json or wear_json == "nan": wear_json = "{}"
@@ -1193,29 +1033,28 @@ else:
             for k in today_diff.keys():
                 today_diff[k] = float(row.get(f'属性_{k}', 0))
 
-        with c2:
-            cols = st.columns(5)
-            attr_keys = [("智慧 (INT)", "智慧"), ("体质 (STR)", "体质"), ("心力 (MEN)", "心力"), ("意志 (WIL)", "意志"), ("魅力 (CHA)", "魅力")]
-            total_days = len(df) if len(df) > 0 else 1
-            for i, (full_name, short_name) in enumerate(attr_keys):
-                tot_val = float(total_stats[full_name])
-                avg_val = tot_val / total_days
-                with cols[i]:
-                    st.metric(short_name, f"{tot_val:.1f}", delta=f"{today_diff[short_name]:.1f}")
-                    st.caption(f"日均: {avg_val:.1f}")
+        total_days = len(df) if len(df) > 0 else 1
+        
+        # 修复：移除 HTML 标签间的换行和缩进，避免被识别为代码块
+        stat_html = '<div class="stat-grid">'
+        attr_keys = [("智慧 (INT)", "智慧"), ("体质 (STR)", "体质"), ("心力 (MEN)", "心力"), ("意志 (WIL)", "意志"), ("魅力 (CHA)", "魅力")]
+        for full, short in attr_keys:
+            val = float(total_stats[full])
+            diff = today_diff[short]
+            avg = val / total_days
+            stat_html += f'<div class="stat-card"><div class="stat-title">{short}</div><div class="stat-value">{val:.1f}</div><div class="stat-delta">{diff:+.1f}</div><div class="stat-avg">日均 {avg:.1f}</div></div>'
+        stat_html += "</div>"
+        st.markdown(stat_html, unsafe_allow_html=True)
 
-        # === 每日奇遇 (已前置) ===
         st.divider()
+        
         st.subheader("每日奇遇 (战利品)")
         mask_curr = df['日期'].dt.strftime('%Y-%m-%d') == str(select_date)
-        loot = {}
-        current_cards = []
+        loot = {}; current_cards = []
         if mask.any():
-            current_loot_json = df[mask_curr].iloc[0].get('每日奇遇_JSON', '{}')
-            current_cards_json = df[mask_curr].iloc[0].get('卡牌掉落_JSON', '[]')
-            try: loot = json.loads(current_loot_json)
+            try: loot = json.loads(df[mask_curr].iloc[0].get('每日奇遇_JSON', '{}'))
             except: pass
-            try: current_cards = json.loads(current_cards_json)
+            try: current_cards = json.loads(df[mask_curr].iloc[0].get('卡牌掉落_JSON', '[]'))
             except: pass
 
         if not loot and not current_cards:
@@ -1229,9 +1068,8 @@ else:
                     st.session_state.loot_revealed[date_key] = True
                     st.rerun()
             else:
-                # 塔罗牌
                 if current_cards:
-                    st.markdown("#### 🎴 命运指引 (点击翻牌)")
+                    st.markdown("#### 🎴 命运指引")
                     cols_c = st.columns(3)
                     for i, card in enumerate(current_cards):
                         card_key = f"card_reveal_{date_key}_{i}"
@@ -1240,13 +1078,8 @@ else:
                                 card_meta = next((t for t in TAROT_DATA if t['id'] == card['id']), card)
                                 with st.container(border=True):
                                     if card_meta['rarity'] == 'SSR': st.success("✨ 传说降临！")
-                                    
-                                    st.markdown(f"<div class='tarot-roman'>{card_meta['roman']}</div>", unsafe_allow_html=True)
                                     st.markdown(f"<div class='big-emoji'>{card_meta['icon']}</div>", unsafe_allow_html=True)
-                                    st.markdown(f"<div class='tarot-en'>{card_meta['en']}</div>", unsafe_allow_html=True)
-                                    st.markdown(f"<div class='tarot-cn'>{card_meta['name']}</div>", unsafe_allow_html=True)
-                                    st.markdown(f"<div class='tarot-meta'>{card_meta['rarity']} · 掉落率 {card_meta['prob']}</div>", unsafe_allow_html=True)
-                                    
+                                    st.markdown(f"<div style='text-align: center; font-weight: bold;'>{card_meta['name']}</div>", unsafe_allow_html=True)
                                     st.info(card_meta['desc'])
                             else:
                                 if st.button("🎴 揭开", key=f"btn_{card_key}"):
@@ -1254,63 +1087,27 @@ else:
                                     st.rerun()
                     st.divider()
 
-                # 文字奇遇 (修复：复用全局回调 + 状态显示)
                 col_l1, col_l2, col_l3 = st.columns(3)
-                
-                def toggle_collection(loot_type):
-                    try:
-                        df_curr = load_data()
-                        target_date_str = pd.to_datetime(select_date).strftime('%Y-%m-%d')
-                        mask_c = df_curr['日期'] == target_date_str
-                        if mask_c.any():
-                            idx = df_curr[mask_c].index[0]
-                            current_json = df_curr.at[idx, '每日奇遇_JSON']
-                            loot = json.loads(current_json)
-                            if loot_type not in loot: loot[loot_type] = {}
-                            curr_stat = loot[loot_type].get('collected', False)
-                            loot[loot_type]['collected'] = not curr_stat
-                            df_curr.at[idx, '每日奇遇_JSON'] = json.dumps(loot, ensure_ascii=False)
-                            if '日期_dt' in df_curr.columns: del df_curr['日期_dt']
-                            df_curr.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
-                            st.rerun()
-                    except: pass
-
                 with col_l1:
                     st.markdown("#### 智慧符文")
                     rune = loot.get('rune', {})
                     st.info(f"**{rune.get('title','')}**\n\n{rune.get('desc','')}")
                     is_c = bool(rune.get('collected', False))
-                    btn_label = "已收藏" if is_c else "收藏"
-                    st.button(btn_label, key="c_rune", icon="🔮", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'rune'))
-
+                    st.button("已收藏" if is_c else "收藏", key="c_rune", icon=":material/favorite:", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'rune'))
                 with col_l2:
                     st.markdown("#### 吟游诗篇")
                     poem = loot.get('poem', {})
                     st.info(f"_{poem.get('content','')}_\n\n—— {poem.get('source','')}")
                     is_c = bool(poem.get('collected', False))
-                    btn_label = "已收藏" if is_c else "收藏"
-                    st.button(btn_label, key="c_poem", icon="📜", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'poem'))
-
+                    st.button("已收藏" if is_c else "收藏", key="c_poem", icon=":material/favorite:", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'poem'))
                 with col_l3:
                     st.markdown("#### 异闻碎片")
                     trivia = loot.get('trivia', {})
                     st.info(trivia.get('content'))
                     is_c = bool(trivia.get('collected', False))
-                    btn_label = "已收藏" if is_c else "收藏"
-                    st.button(btn_label, key="c_trivia", icon="🧩", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'trivia'))
+                    st.button("已收藏" if is_c else "收藏", key="c_trivia", icon=":material/favorite:", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'trivia'))
 
-        st.divider()
-        st.subheader("属性成长趋势")
-        df_cum = df.copy()
-        for k in COLS_STATS: df_cum[k] = df_cum[k].astype(float).cumsum()
-        df_melt = df_cum.melt('日期_dt', COLS_STATS, var_name='属性', value_name='数值')
-        df_melt['属性'] = df_melt['属性'].apply(lambda x: x.replace('属性_', ''))
-        trend_chart = alt.Chart(df_melt).mark_line().encode(
-            x=alt.X('日期_dt:T', title='日期'), y='数值:Q', color='属性:N', tooltip=['日期_dt', '属性', '数值']
-        ).properties(height=300).interactive()
-        st.altair_chart(trend_chart, use_container_width=True)
-
-    # === Tab 2: 冒险记录 ===
+    # === Tab 2: 冒险记录 (详情修复) ===
     with tab2:
         c1, c2, c3, c4 = st.columns(4)
         avg_s = df['初始状态'].mean()
@@ -1321,17 +1118,7 @@ else:
                 for b in json.loads(r.get('阅读数据_JSON', '[]')):
                     curr = int(b.get('current',0))
                     name = b.get('name','')
-                    if name:
-                        last = b_map.get(name, 0)
-                        if curr > last: total_read += (curr - last)
-                        b_map[name] = curr
-                for b in json.loads(r.get('已读列表_JSON', '[]')):
-                    curr = int(b.get('total',0))
-                    name = b.get('name','')
-                    if name:
-                        last = b_map.get(name, 0)
-                        if curr > last: total_read += (curr - last)
-                        b_map[name] = curr
+                    if name: total_read += curr
             except: pass
             
         c1.metric("登录天数", len(df))
@@ -1344,650 +1131,376 @@ else:
         if not df.empty:
             min_d = df['日期_dt'].min()
             max_d = date(date.today().year, 12, 31)
-            min_d = date(date.today().year, 1, 1)
             all_d = pd.date_range(min_d, max_d).date
             df_full = pd.DataFrame({'日期_dt': pd.to_datetime(all_d)})
-            
             df_chart = df.copy()
             df_chart['Total_HP'] = df_chart['初始状态'].astype(int) + df_chart['结算状态'].astype(int)
-            df_merged = pd.merge(df_full, df_chart, on='日期_dt', how='left')
-            df_merged['Total_HP'] = df_merged['Total_HP'].fillna(0)
+            df_merged = pd.merge(df_full, df_chart, on='日期_dt', how='left').fillna(0)
             
             col_y, col_m, col_n1, col_n2 = st.columns([2, 2, 1, 1])
             with col_y: sel_year = st.selectbox("年份", range(2023, 2031), index=st.session_state.view_year - 2023)
             with col_m: sel_month = st.selectbox("月份", range(1, 13), index=st.session_state.view_month - 1)
-            if sel_year != st.session_state.view_year: st.session_state.view_year = sel_year
-            if sel_month != st.session_state.view_month: st.session_state.view_month = sel_month
+            if sel_year != st.session_state.view_year: st.session_state.view_year = sel_year; st.rerun()
+            if sel_month != st.session_state.view_month: st.session_state.view_month = sel_month; st.rerun()
             
-            with col_n1:
-                if st.button("◀", help="上个月"):
-                    if st.session_state.view_month == 1:
-                        st.session_state.view_month = 12; st.session_state.view_year -= 1
-                    else: st.session_state.view_month -= 1
-                    st.rerun()
-            with col_n2:
-                if st.button("▶", help="下个月"):
-                    if st.session_state.view_month == 12:
-                        st.session_state.view_month = 1; st.session_state.view_year += 1
-                    else: st.session_state.view_month += 1
-                    st.rerun()
-
             cal = calendar.Calendar(firstweekday=0)
             month_days = cal.monthdatescalendar(st.session_state.view_year, st.session_state.view_month)
             plot_data = []
             for w_idx, week in enumerate(month_days):
                 for d_idx, d_date in enumerate(week):
                     if d_date.month == st.session_state.view_month:
-                        hp = 0; has = False
-                        d_str = d_date.strftime('%Y-%m-%d')
-                        mask = df['日期'] == d_str
+                        hp=0; has=False; d_str=d_date.strftime('%Y-%m-%d')
+                        mask=df['日期']==d_str
                         if mask.any():
-                            row = df[mask].iloc[0]
-                            hp = int(row.get('初始状态',0)) + int(row.get('结算状态',0))
-                            has = True
+                            row=df[mask].iloc[0]
+                            hp=int(row.get('初始状态',0))+int(row.get('结算状态',0))
+                            has=True
                         plot_data.append({'date':d_str, 'day':d_date.day, 'week':w_idx, 'weekday':d_idx, 'hp':hp, 'has':has})
             
             if plot_data:
                 df_cal = pd.DataFrame(plot_data)
                 click = alt.selection_point(fields=['date'], name='select_date')
-                
                 hm = alt.Chart(df_cal).mark_rect().encode(
-                    x=alt.X('weekday:O', axis=alt.Axis(title=None, labelExpr="['一','二','三','四','五','六','日'][datum.value]")),
+                    x=alt.X('weekday:O', axis=alt.Axis(labelExpr="['一','二','三','四','五','六','日'][datum.value]", title='')),
                     y=alt.Y('week:O', axis=None),
-                    color=alt.condition(
-                        'datum.has',
-                        alt.Color('hp:Q', scale=alt.Scale(scheme='greens'), legend=None),
-                        alt.value('#f0f0f0')
-                    ),
+                    color=alt.condition('datum.has', alt.Color('hp:Q', scale=alt.Scale(scheme='greens'), legend=None), alt.value('#f0f0f0')),
                     tooltip=['date', 'hp']
                 ).add_params(click).properties(height=250, width='container')
                 
                 evt = st.altair_chart(hm, use_container_width=True, on_select="rerun")
-                
                 sel_d = None
                 if hasattr(evt, "selection") and "select_date" in evt.selection:
-                    try:
-                        sel_data = evt.selection["select_date"]
-                        if len(sel_data) > 0:
-                            sel_d = sel_data[0].get("date")
+                    try: sel_d = evt.selection["select_date"][0].get("date")
                     except: pass
-
-                st.divider()
+                
                 if sel_d:
                     target_d = str(sel_d)
                     mask = df['日期'] == target_d
                     if mask.any():
                         row = df[mask].iloc[0]
                         st.markdown(f"### 📅 {target_d}")
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            st.info(f"☀️ 起床: {row['初始状态']}")
-                            if row.get('初始_感受'): st.text(f"感受: {row.get('初始_感受')}")
-                            if row.get('初始_点赞'): st.success(f"鼓励: {row.get('初始_点赞')}")
-                        with c2:
-                            st.info(f"🌙 结算: {row['结算状态']}")
-                            if row.get('结算_感受'): st.text(f"感受: {row.get('结算_感受')}")
-                            if row.get('结算_点赞'): st.success(f"鼓励: {row.get('结算_点赞')}")
                         
-                        def show(t, cols):
-                            ls = []
+                        def show_section(title, cols):
+                            content = []
                             for c in cols:
-                                v = row.get(c)
+                                val = row.get(c)
                                 if c.endswith('_Check'):
-                                    if str(v)=='True': ls.append(f"✅ **{c.split('_')[1]}** 已打卡")
-                                elif v:
-                                    dl = LABEL_MAP.get(c.split('_')[1], c.split('_')[1])
-                                    ls.append(f"- **{dl}**: {v}")
-                            if ls:
-                                st.markdown(f"#### {t}")
-                                for l in ls: st.write(l)
-                        show("晨间", COLS_MORNING + ['晨_锻炼_Check', '晨_娱乐_Check', '晨_冥想_Check'])
-                        show("白天", COLS_DAY)
-                        show("晚间", COLS_NIGHT + ['晚_锻炼_Check', '晚_娱乐_Check', '晚_冥想_Check'])
-                        st.markdown("---")
+                                    if str(val) == 'True': content.append(f"✅ **{c.replace('_Check','').split('_')[1]}** 已打卡")
+                                elif val and str(val) != 'nan':
+                                    label = c.split('_')[1] if '_' in c else c
+                                    content.append(f"- **{label}**: {val}")
+                            
+                            if content:
+                                st.markdown(f"#### {title}")
+                                for line in content: st.write(line)
+                                st.divider()
+                        
+                        show_section("🌅 晨间", COLS_MORNING + ['晨_锻炼_Check', '晨_娱乐_Check', '晨_冥想_Check'])
+                        show_section("☀️ 昼间", COLS_DAY)
+                        show_section("🌙 晚间", COLS_NIGHT + ['晚_锻炼_Check', '晚_娱乐_Check', '晚_冥想_Check'])
+
                         st.markdown(f"**🏆 总结**: {row.get('每日总结')}")
                         
-                        # 修复：增加深渊凝视历史记录显示
                         abyss_json = row.get('深渊凝视_JSON', '{}')
                         try:
                              abyss_data = json.loads(abyss_json)
                              if abyss_data and abyss_data.get('completed'):
                                   st.markdown("---")
-                                  st.subheader("🌀 深渊凝视记录")
-                                  st.write(f"**凝视对象**: {abyss_data.get('boss_name', '未知')}")
-                                  if 'question' in abyss_data: # 兼容旧数据，新数据会带
-                                       st.caption(f"**试炼问题**: {abyss_data['question']}")
-                                  if 'answer' in abyss_data:
-                                       st.info(f"**你的回应**: {abyss_data['answer']}")
-                                  
-                                  c1, c2 = st.columns(2)
-                                  c1.write(f"**评分**: {abyss_data.get('score', 0)}")
-                                  c2.write(f"**智者寄语**: {abyss_data.get('comment', '')}")
-                                  
-                                  # 显示奖励详情
-                                  st.markdown("**🎁 获得奖励**:")
-                                  rewards = []
-                                  
-                                  # 经验详情优化
-                                  exp_val = abyss_data.get('exp', 0)
-                                  dist = abyss_data.get('exp_distribution', {})
-                                  if exp_val > 0:
-                                      if dist:
-                                          detail_str = "；".join([f"{k}+{v}" for k,v in dist.items()])
-                                          rewards.append(f"经验 +{exp_val} ({detail_str})")
-                                      else:
-                                          rewards.append(f"经验 +{exp_val}")
-
-                                  if abyss_data.get('card'):
-                                      c = abyss_data['card']
-                                      rewards.append(f"卡牌 [{c['rarity']}] {c['name']} (幸运倍率 x{abyss_data.get('mult', 1.0):.1f})")
-                                  
-                                  if abyss_data.get('modify_tag'):
-                                      m = abyss_data['modify_tag']
-                                      rewards.append(f"标签变更: {m['old']} -> {m['new']}")
-                                  if abyss_data.get('remove_tag'):
-                                      rewards.append(f"标签移除: {abyss_data['remove_tag']}")
-                                  if abyss_data.get('add_tag'):
-                                      rewards.append(f"标签获得: {abyss_data['add_tag']}")
-                                      
-                                  for r in rewards:
-                                      st.text(f"- {r}")
-
+                                  st.caption("🌀 深渊记录")
+                                  st.write(f"**对象**: {abyss_data.get('boss_name')}")
+                                  st.info(f"**回应**: {abyss_data.get('answer')}")
                         except: pass
-                        
-                    else: st.info(f"📅 {target_d}：未填写")
-                else: st.caption("👆 点击上方日历格子查看详情")
-            else: st.info("本月无数据")
 
-    # === Tab 3: 🔮 灵魂之镜 ===
+    # === Tab 3: 灵魂之镜 ===
     with tab3:
-        st.header("🔮 灵魂之镜 (Soul Mirror)")
-        if not (ai_config_pack and ai_config_pack.get('key')):
-            st.warning("请在侧边栏填入 API Key")
+        st.header("🔮 灵魂之镜")
+        if not (ai_config_pack and ai_config_pack.get('key')): st.warning("请配置 API Key")
         else:
-            # 显示当前的印象标签
-            # 重新读取最新的df，防止session state滞后
-            df_latest = load_data()
-            try:
-                latest_tags = json.loads(df_latest.iloc[-1].get('印象标签_JSON', '[]'))
+            # 标签展示
+            try: latest_tags = json.loads(df.iloc[-1].get('印象标签_JSON', '[]'))
             except: latest_tags = []
-            
             if latest_tags:
-                st.caption("🔍 我眼中的你：")
-                # 使用 CSS 渲染好看的标签
+                st.caption("🔍 你的印象标签：")
                 tags_html = "".join([f"<span class='soul-tag'>{tag}</span>" for tag in latest_tags])
                 st.markdown(f"<div class='tag-container'>{tags_html}</div>", unsafe_allow_html=True)
-            else:
-                st.info("暂无印象，请多写几次日记让我认识你...")
-                
-            # 新增：追溯按钮 (如果还没有标签)
-            if not latest_tags and len(df) > 1:
-                if st.button("🔄 基于历史数据生成初次印象", type="primary"):
-                    with st.spinner("正在回溯时间长河..."):
-                        new_tags = generate_history_tags(df, ai_config_pack)
-                        if new_tags:
-                            st.success("印象生成成功！请刷新页面查看。")
-                            time.sleep(1)
-                            st.rerun()
-                        else:
-                            st.error("生成失败，请检查网络或 Key")
 
             st.divider()
             
-            user_query = st.text_input("🔮 叩问灵魂 (留空则映照全貌)", placeholder="例如：最近一周我哪天熬夜了？")
-
-            # 调整位置：照见自己 (开始分析)
-            c_t1, c_t2 = st.columns(2)
-            with c_t1: start_d = st.date_input("开始日期", date.today() - timedelta(days=7))
-            with c_t2: end_d = st.date_input("结束日期", date.today())
-
-            if st.button("👁️ 照见自己 (开始分析)"):
-                if df.empty: st.error("无数据")
-                else:
-                    mask = (df['日期_dt'].dt.date >= start_d) & (df['日期_dt'].dt.date <= end_d)
-                    df_filtered = df.loc[mask]
-                    if df_filtered.empty: st.warning("该时段无数据")
-                    else:
-                        with st.spinner("正在凝视命运的长河..."):
-                            txt = ""
-                            for _, r in df_filtered.iterrows():
-                                txt += f"=== {r['日期']} ===\n"
-                                txt += f"总结: {r.get('每日总结','')}\n状态: {r['初始状态']}->{r['结算状态']}\n"
-                                for k in COLS_MORNING + COLS_DAY + COLS_NIGHT:
-                                    if r.get(k): txt += f"{k}: {r[k]}\n"
-                                if r.get('晨_锻炼_Check')=='True': txt+="晨间锻炼打卡\n"
-                                txt += "\n"
-                            
-                            impression_context = f"【当前玩家印象】{', '.join(latest_tags)}" if latest_tags else ""
-
-                            if user_query.strip():
-                                prompt = f"你是灵魂之镜。{impression_context}\n请根据以下时间段（{start_d} 至 {end_d}）的游戏日志，回答玩家的提问。\n\n【玩家提问】\n{user_query}\n\n【游戏日志】\n{txt}\n\n请基于日志事实回答。"
-                            else:
-                                prompt = f"分析玩家这段时间（{start_d} 至 {end_d}）的游戏日志。{impression_context}\n{txt}\n请输出Markdown报告：\n1. **命运回响 (战况综述)**\n2. **灵魂光谱 (属性分析)**\n3. **阴影面 (弱点洞察)**\n4. **启示录 (通关攻略)**"
-                            
-                            st.session_state.ai_response = call_ai_coach(ai_config_pack['key'], ai_config_pack['base'], ai_config_pack['model'], prompt)
-        
-            if st.session_state.ai_response:
-                st.markdown("---")
-                st.markdown(st.session_state.ai_response)
-
-        # === 核心功能：心灵回廊 (BOSS战) ===
-        st.divider()
-        st.subheader("🌀 深渊凝视 (Abyss Gaze)")
-        
-        # 每日限一次逻辑
-        today_str = str(date.today())
-        boss_record = {}
-        mask_today = df['日期'] == today_str
-        if mask_today.any():
-                raw_boss = df[mask_today].iloc[0].get('深渊凝视_JSON', '{}')
-                try: boss_record = json.loads(raw_boss)
+            # 深渊凝视
+            today_str = str(date.today())
+            mask_today = df['日期'] == today_str
+            boss_record = {}
+            if mask_today.any():
+                try: boss_record = json.loads(df[mask_today].iloc[0].get('深渊凝视_JSON', '{}'))
                 except: pass
-        
-        if 'boss_battle' not in st.session_state: st.session_state.boss_battle = None
-        if 'boss_result' not in st.session_state: st.session_state.boss_result = None
-        if 'boss_card_revealed' not in st.session_state: st.session_state.boss_card_revealed = False
+            
+            is_completed = boss_record.get('completed', False)
+            has_today_record = mask_today.any()
 
-        is_completed = boss_record.get('completed', False)
-        
-        # 前置检查：今日是否有存档
-        has_today_record = False
-        mask_today = df['日期'] == today_str
-        if mask_today.any():
-            has_today_record = True
-        
-        if not has_today_record:
-            st.info("🔒 封印中... 请先完成今日的【每日复盘】并存档，方可开启深渊凝视。")
-        else:
-            if is_completed:
-                st.success("今日深渊凝视已完成。")
-                with st.expander("📜 回望试炼印记", expanded=True):
-                    st.write(f"**凝视对象**: {boss_record.get('boss_name','未知')}")
-                    if 'question' in boss_record:
-                         st.caption(f"**试炼问题**: {boss_record['question']}")
-                    if 'answer' in boss_record:
-                         st.info(f"**你的回应**: {boss_record['answer']}")
-                    
-                    c1, c2 = st.columns(2)
-                    c1.write(f"**评分**: {boss_record.get('score', 0)}")
-                    c2.write(f"**智者寄语**: {boss_record.get('comment', '')}")
-                    
-                    # 显示奖励详情
-                    st.markdown("**🎁 获得奖励**:")
-                    rewards = []
-                    
-                    # 经验详情优化
-                    exp_val = boss_record.get('exp', 0)
-                    dist = boss_record.get('exp_distribution', {})
-                    if exp_val > 0:
-                        if dist:
-                            detail_str = "；".join([f"{k}+{v}" for k,v in dist.items()])
-                            rewards.append(f"经验 +{exp_val} ({detail_str})")
-                        else:
-                            rewards.append(f"经验 +{exp_val}")
-
-                    if boss_record.get('card'):
+            if not has_today_record:
+                st.info("🔒 请先完成今日复盘，方可开启深渊凝视。")
+            else:
+                if is_completed:
+                    st.success("今日试炼已完成。")
+                    with st.expander("📜 回望试炼印记", expanded=True):
+                        st.write(f"**对象**: {boss_record.get('boss_name')}")
+                        if 'answer' in boss_record: st.info(f"**回应**: {boss_record['answer']}")
+                        st.write(f"**评分**: {boss_record.get('score')}")
+                        st.write(f"**寄语**: {boss_record.get('comment')}")
+                        
+                        st.markdown("**🎁 获得奖励**:")
+                        rewards = []
+                        exp_val = boss_record.get('exp', 0)
+                        dist = boss_record.get('exp_distribution', {})
+                        if exp_val > 0:
+                            if dist:
+                                detail_str = "；".join([f"{k}+{v}" for k,v in dist.items()])
+                                rewards.append(f"经验 +{exp_val} ({detail_str})")
+                            else:
+                                rewards.append(f"经验 +{exp_val}")
+                        if boss_record.get('card'):
                             c = boss_record['card']
                             rewards.append(f"卡牌 [{c['rarity']}] {c['name']} (幸运倍率 x{boss_record.get('mult', 1.0):.1f})")
+                        if boss_record.get('modify_tag'):
+                            m = boss_record['modify_tag']
+                            rewards.append(f"标签变更: {m['old']} -> {m['new']}")
+                        if boss_record.get('remove_tag'):
+                            rewards.append(f"标签移除: {boss_record['remove_tag']}")
+                        if boss_record.get('add_tag'):
+                            rewards.append(f"标签获得: {boss_record['add_tag']}")
+                        for r in rewards: st.text(f"- {r}")
+                
+                elif st.session_state.get('boss_result'):
+                    res = st.session_state.boss_result
+                    st.markdown("### 🎁 战利品鉴定")
+                    st.markdown(f"<div class='reward-box'><div>意志评分：{res['score']}</div></div>", unsafe_allow_html=True)
                     
-                    # 标签
-                    if boss_record.get('modify_tag'):
-                        m = boss_record['modify_tag']
-                        rewards.append(f"标签变更: {m['old']} -> {m['new']}")
-                    if boss_record.get('remove_tag'):
-                        rewards.append(f"标签移除: {boss_record['remove_tag']}")
-                    if boss_record.get('add_tag'):
-                        rewards.append(f"标签获得: {boss_record['add_tag']}")
-                        
-                    for r in rewards:
-                        st.text(f"- {r}")
-
-            elif st.session_state.get('boss_result'):
-                # 结算界面
-                res = st.session_state.boss_result
-                st.markdown("### 🎁 战利品鉴定")
-                
-                st.markdown(f"""
-                <div class='reward-box'>
-                    <div>意志评分：{res['score']}</div>
-                    <div>幸运倍率：<span class='reward-val'>x{res['mult']:.1f}</span></div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # 显示经验值分配
-                exp_dist = res.get('exp_distribution', {})
-                if exp_dist:
-                     st.write("🌟 **属性提升**：")
-                     cols_exp = st.columns(len(exp_dist))
-                     for idx, (k, v) in enumerate(exp_dist.items()):
-                          with cols_exp[idx]:
-                               st.metric(k, f"+{v}")
-                else:
-                     if res['exp'] > 0:
-                         st.metric("意志提升", f"+{res['exp']}")
-                     else:
-                         st.caption("无经验获得")
-
-                st.info(f"**智者寄语**：{res['comment']}")
-                
-                # 鉴定卡牌逻辑
-                if not st.session_state.get('boss_card_revealed'):
-                    if res['card']: # 有卡牌
-                        if st.button("🎴 翻开命运之牌", type="primary"):
-                            st.session_state.boss_card_revealed = True
-                            st.rerun()
-                    else: # 无卡牌
-                        st.caption("（本次评分过低，命运之轮未曾转动）")
-                        if st.button("结束试炼"):
-                             st.session_state.boss_card_revealed = True
-                             st.rerun()
-
-                else:
-                    card = res['card']
-                    if card:
-                        st.markdown(f"""
-                        <div style='text-align: center; padding: 20px; border: 2px solid gold; border-radius: 10px;'>
-                            <div class='big-emoji'>{card['icon']}</div>
-                            <h3>{card['name']} ({card['rarity']})</h3>
-                            <p>{card['desc']}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                         st.markdown(f"""
-                        <div style='text-align: center; padding: 20px; border: 2px dashed gray; border-radius: 10px; opacity: 0.6;'>
-                            <h3>💨 空无一物</h3>
-                            <p>意志微弱，命运未曾降临...</p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    exp_dist = res.get('exp_distribution', {})
+                    if exp_dist:
+                         st.write("🌟 **属性提升**：")
+                         cols_exp = st.columns(len(exp_dist))
+                         for idx, (k, v) in enumerate(exp_dist.items()):
+                              with cols_exp[idx]:
+                                   st.metric(k, f"+{v}")
                     
-                    if st.button("✨ 确认收下奖励 ✨", key="claim_boss_reward"):
-                        try:
-                            df_curr = load_data()
-                            # 因为有前置检查，今天肯定有行
-                            idx = df_curr[df_curr['日期'] == today_str].index[0]
-                            
-                            # 1. 保存深渊记录
-                            df_curr.at[idx, '深渊凝视_JSON'] = json.dumps(res, ensure_ascii=False)
-                            
-                            # 2. 加经验 (AI分配 or 默认意志)
-                            dist = res.get('exp_distribution', {})
-                            if not dist and res['exp'] > 0: dist = {'意志': res['exp']}
-                            
-                            for k, v in dist.items():
-                                col_k = f"属性_{k}"
-                                if col_k in df_curr.columns:
-                                    old_val = float(df_curr.at[idx, col_k] or 0)
-                                    df_curr.at[idx, col_k] = old_val + v
-                            
-                            # 3. 加卡牌
-                            if res['card']:
-                                curr_cards = json.loads(df_curr.at[idx, '卡牌掉落_JSON'] or '[]')
-                                curr_cards.append(res['card'])
-                                df_curr.at[idx, '卡牌掉落_JSON'] = json.dumps(curr_cards, ensure_ascii=False)
-                            
-                            # 4. 更新标签 (智能继承)
-                            raw_tags = df_curr.at[idx, '印象标签_JSON'] or '[]'
-                            curr_tags = json.loads(raw_tags)
-                            
-                            # 继承补全逻辑
-                            if not curr_tags and len(df_curr) > 1:
-                                prev_tags = json.loads(df_curr.iloc[idx-1].get('印象标签_JSON', '[]'))
-                                curr_tags = list(prev_tags)
-                            
-                            if res.get('modify_tag'): 
-                                mod = res['modify_tag'] 
-                                if mod['old'] in curr_tags:
-                                    curr_tags.remove(mod['old'])
-                                    curr_tags.append(mod['new'])
-
-                            if res.get('remove_tag') and res['remove_tag'] in curr_tags: 
-                                curr_tags.remove(res['remove_tag'])
-                                
-                            if res.get('add_tag') and res['add_tag'] not in curr_tags: 
-                                curr_tags.append(res['add_tag'])
-                                
-                            df_curr.at[idx, '印象标签_JSON'] = json.dumps(curr_tags, ensure_ascii=False)
-                            
-                            if '日期_dt' in df_curr.columns: del df_curr['日期_dt']
-                            df_curr.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
-                            
-                            st.balloons()
-                            st.session_state.boss_result = None
-                            st.session_state.boss_card_revealed = False
-                            st.rerun()
-                            
-                        except Exception as e:
-                            st.error(f"存档失败: {e}")
-
-            elif st.session_state.get('boss_battle'):
-                # 战斗界面
-                boss = st.session_state.boss_battle
-                
-                # 根据类型切换颜色
-                theme_class = "boss-container-truth" if boss.get('type') == 'truth' else "boss-container-demon"
-                title_class = "boss-title-truth" if boss.get('type') == 'truth' else "boss-title-demon"
-                icon_char = '🦉' if boss.get('type') == 'truth' else '👹'
-                trial_name = "真理追问" if boss.get('type') == 'truth' else "试炼挑战"
-                
-                st.markdown(f"""
-                <div class="{theme_class}">
-                    <div class="{title_class}">{icon_char} {boss.get('name', '未知存在')}</div>
-                    <p><em>{boss.get('intro', '...')}</em></p>
-                    <hr>
-                    <h3>⚔️ {trial_name}：{boss.get('question', '...')}</h3>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                user_answer = st.text_area("你的回应 (真诚面对，理性思考)", height=100, key="boss_ans")
-                
-                if st.button("进行回应", type="primary", icon=":material/send:"):
-                    if not user_answer or len(user_answer) < 15:
-                        st.warning("回答太短，无法形成有效回应（至少15字）。")
-                    else:
-                        with st.spinner("正在判定意志力..."):
-                            # 传入模式
-                            mode = boss.get('type', 'demon')
-                            result = resolve_boss_battle(boss['question'], user_answer, ai_config_pack, mode)
-                            if result:
-                                score = result.get('score', 0)
-                                # 经验计算 (2.5分制)
-                                raw_exp = 0
-                                if score >= 60: raw_exp = 1.0
-                                if score >= 80: raw_exp = 2.0
-                                if score >= 95: raw_exp = 2.5
-                                
-                                # 属性分配处理
-                                dist = result.get('exp_distribution', {})
-                                # 简单校验总和
-                                total_d = sum(dist.values()) if dist else 0
-                                if total_d == 0 and raw_exp > 0: 
-                                    dist = {'意志': raw_exp} # 默认给意志
-                                elif total_d > 2.5:
-                                    factor = 2.5 / total_d
-                                    dist = {k: v*factor for k,v in dist.items()}
-                                
-                                final_exp = sum(dist.values())
-                                card, mult = draw_boss_card(score)
-                                
-                                # 补充记录：保存问题和回答
-                                st.session_state.boss_result = {
-                                    "boss_name": boss.get('name'),
-                                    "question": boss.get('question'), # 新增
-                                    "answer": user_answer, # 新增
-                                    "score": score,
-                                    "comment": result.get('comment'),
-                                    "exp": final_exp,
-                                    "exp_distribution": dist,
-                                    "card": card,
-                                    "mult": mult,
-                                    "modify_tag": result.get('modify_tag'),
-                                    "rm_tag": result.get('remove_tag'),
-                                    "add_tag": result.get('add_tag'),
-                                    "completed": True
-                                }
-                                st.session_state.boss_battle = None 
+                    st.info(f"**智者寄语**：{res['comment']}")
+                    if not st.session_state.get('boss_card_revealed'):
+                        if res['card']:
+                            if st.button("🎴 翻开命运之牌", type="primary"):
+                                st.session_state.boss_card_revealed = True
                                 st.rerun()
-            else:
-                # 初始状态：召唤按钮
-                if st.button("🔥 召唤今日心魔 / 寻求真理", type="primary"):
-                    if df.empty:
-                        st.error("数据不足，无法具象化心魔")
+                        else:
+                            st.caption("（本次评分过低，命运之轮未曾转动）")
+                            if st.button("结束试炼"):
+                                st.session_state.boss_card_revealed = True
+                                st.rerun()
                     else:
+                        if res['card']:
+                            c = res['card']
+                            st.markdown(f"<div class='big-emoji'>{c['icon']}</div>", unsafe_allow_html=True)
+                            st.markdown(f"**{c['name']}** ({c['rarity']})")
+                        if st.button("✨ 确认收下奖励 ✨", type="primary"):
+                            try:
+                                df_curr = load_data()
+                                idx = df_curr[df_curr['日期'] == today_str].index[0]
+                                df_curr.at[idx, '深渊凝视_JSON'] = json.dumps(res, ensure_ascii=False)
+                                
+                                dist = res.get('exp_distribution', {})
+                                if not dist and res['exp']>0: dist={'意志': res['exp']}
+                                for k,v in dist.items():
+                                    col_k = f"属性_{k}"
+                                    if col_k in df_curr.columns:
+                                        df_curr.at[idx, col_k] = float(df_curr.at[idx, col_k] or 0) + v
+                                
+                                if res['card']:
+                                    cards = json.loads(df_curr.at[idx, '卡牌掉落_JSON'] or '[]')
+                                    cards.append(res['card'])
+                                    df_curr.at[idx, '卡牌掉落_JSON'] = json.dumps(cards, ensure_ascii=False)
+
+                                raw_tags = df_curr.at[idx, '印象标签_JSON'] or '[]'
+                                curr_tags = json.loads(raw_tags)
+                                if res.get('modify_tag'):
+                                    m = res['modify_tag']
+                                    if m['old'] in curr_tags:
+                                        curr_tags.remove(m['old']); curr_tags.append(m['new'])
+                                if res.get('remove_tag') and res['remove_tag'] in curr_tags:
+                                    curr_tags.remove(res['remove_tag'])
+                                if res.get('add_tag'): curr_tags.append(res['add_tag'])
+                                df_curr.at[idx, '印象标签_JSON'] = json.dumps(curr_tags, ensure_ascii=False)
+
+                                if '日期_dt' in df_curr.columns: del df_curr['日期_dt']
+                                df_curr.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
+                                st.session_state.boss_result = None
+                                st.session_state.boss_card_revealed = False
+                                st.balloons()
+                                st.rerun()
+                            except: st.error("存档失败")
+                
+                elif st.session_state.get('boss_battle'):
+                    boss = st.session_state.boss_battle
+                    theme = "boss-container-truth" if boss.get('type')=='truth' else "boss-container-demon"
+                    title_c = "boss-title-truth" if boss.get('type')=='truth' else "boss-title-demon"
+                    icon = '🦉' if boss.get('type')=='truth' else '👹'
+                    name = "真理追问" if boss.get('type')=='truth' else "试炼挑战"
+                    
+                    st.markdown(f"""
+                    <div class="{theme}">
+                        <div class="{title_c}">{icon} {boss.get('name')}</div>
+                        <p><em>{boss.get('intro')}</em></p>
+                        <hr>
+                        <h3>⚔️ {name}：{boss.get('question')}</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    ans = st.text_area("你的回应 (真诚面对，理性思考)", height=100, key="boss_ans")
+                    if st.button("进行回应", type="primary", icon=":material/send:"):
+                        if len(ans)<15: st.warning("回答太短（至少15字）")
+                        else:
+                            with st.spinner("正在判定..."):
+                                res = resolve_boss_battle(boss['question'], ans, ai_config_pack, boss.get('type'))
+                                if res:
+                                    score = res.get('score', 0)
+                                    raw_exp = 0
+                                    if score >= 60: raw_exp = 1.0
+                                    if score >= 80: raw_exp = 2.0
+                                    if score >= 95: raw_exp = 2.5
+                                    
+                                    card, mult = draw_boss_card(score)
+                                    st.session_state.boss_result = {
+                                        "boss_name": boss.get('name'), "question": boss.get('question'),
+                                        "answer": ans, "score": score, "comment": res.get('comment'),
+                                        "exp": raw_exp, "exp_distribution": res.get('exp_distribution'),
+                                        "card": card, "mult": mult,
+                                        "modify_tag": res.get('modify_tag'), "remove_tag": res.get('remove_tag'),
+                                        "add_tag": res.get('add_tag'), "completed": True
+                                    }
+                                    st.session_state.boss_battle = None
+                                    st.rerun()
+                else:
+                    if st.button("🔥 召唤今日心魔 / 寻求真理", type="primary"):
                         with st.spinner("正在凝视深渊..."):
-                            # 获取书籍列表
                             active_books = st.session_state.reading_list
                             boss_data = generate_boss_encounter(df, ai_config_pack, active_books)
                             if boss_data:
                                 st.session_state.boss_battle = boss_data
                                 st.rerun()
-                            else:
-                                st.error("召唤失败，深渊没有回应")
 
-    # === Tab 4: 皇家宝库 ===
+    # === Tab 4: 皇家宝库 (UI 修复) ===
     with tab4:
         st.header("皇家宝库")
         
-        # === 1. 成就勋章区域 ===
-        st.subheader("🏆 成就勋章 (Achievements)")
-        
-        unlocked_achievements = check_and_unlock_achievements(df)
-        unlocked_ids = [a['id'] for a in unlocked_achievements]
-        
-        try:
-            current_wear = json.loads(df.iloc[-1].get('佩戴成就_JSON', '{}'))
-            current_wear_name = current_wear.get('name', '')
-        except: current_wear_name = ""
+        # 1. 成就 (折叠)
+        with st.expander("🏆 成就勋章", expanded=False):
+             unlocked = check_and_unlock_achievements(df)
+             u_ids = [a['id'] for a in unlocked]
+             try:
+                 df_s = df.sort_values('日期_dt')
+                 curr_w = json.loads(df_s.iloc[-1].get('佩戴成就_JSON', '{}'))
+                 curr_name = curr_w.get('name', '')
+             except: curr_name = ""
+             
+             # 修复：使用 Grid 布局
+             ach_html = '<div class="stat-grid">'
+             for ach in ACHIEVEMENT_DATA:
+                 is_u = ach['id'] in u_ids
+                 opacity = "1.0" if is_u else "0.3"
+                 filter_style = "" if is_u else "filter: grayscale(100%);"
+                 ach_html += f'<div class="stat-card" style="opacity: {opacity}; {filter_style}"><div style="font-size: 24px;">{ach["icon"]}</div><div style="font-size: 10px; font-weight: bold;">{ach["name"]}</div><div style="font-size: 8px; color: #666;">{ach["desc"]}</div></div>'
+             ach_html += "</div>"
+             st.markdown(ach_html, unsafe_allow_html=True)
+             
+             if unlocked:
+                 st.divider()
+                 st.caption("选择佩戴：")
+                 cols = st.columns(4)
+                 for i, ach in enumerate(unlocked):
+                     with cols[i % 4]:
+                         if st.button(f"{ach['icon']} {ach['name']}", key=f"wear_{ach['id']}"):
+                             equip_badge_callback(json.dumps({"name": ach['name'], "icon": ach['icon']}, ensure_ascii=False))
 
-        cols_ach = st.columns(5)
-        for i, ach in enumerate(ACHIEVEMENT_DATA):
-            is_unlocked = ach['id'] in unlocked_ids
-            is_wearing = (ach['name'] == current_wear_name)
+        # 2. 塔罗图鉴 (折叠)
+        with st.expander("🎴 命运图鉴", expanded=False):
+            collected_cards = []
+            for _, r in df.iterrows():
+                try: collected_cards.extend(json.loads(r.get('卡牌掉落_JSON', '[]')))
+                except: pass
+            
+            card_counts = {i: 0 for i in range(78)}
+            for c in collected_cards:
+                cid = c.get('id')
+                if cid is not None: card_counts[cid] += 1
+            
+            t1, t2, t3, t4, t5 = st.tabs(["大阿卡纳", "权杖", "圣杯", "宝剑", "星币"])
+            
+            def render_gallery_tab(group_name, container):
+                group_cards = [c for c in TAROT_DATA if c.get('group','').startswith(group_name)]
+                with container:
+                    cols = st.columns(4)
+                    for i, card in enumerate(group_cards):
+                        cid = card['id']
+                        count = card_counts.get(cid, 0)
+                        with cols[i % 4]:
+                            with st.container(border=True):
+                                if count > 0:
+                                    st.markdown(f"<div class='tarot-roman'>{card['roman']}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='big-emoji'>{card['icon']}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div class='tarot-cn'>{card['name']}</div>", unsafe_allow_html=True)
+                                    st.caption(f"{card['en']}")
+                                    st.caption(f"{card['rarity']} | x{count}")
+                                    with st.popover("详情"):
+                                         st.write(card['desc'])
+                                else:
+                                    st.markdown(f"<div style='font-size:40px; text-align:center; color:#eee;'>🔒</div>", unsafe_allow_html=True)
+                                    st.caption("未解锁")
 
-            with cols_ach[i % 5]:
-                with st.container(border=True):
-                    if is_unlocked:
-                        st.markdown(f"<div style='font-size: 40px; text-align: center;'>{ach['icon']}</div>", unsafe_allow_html=True)
-                        st.markdown(f"**{ach['name']}**")
-                        st.caption(ach['desc'])
-                        
-                        if is_wearing:
-                            if st.button("🔴 摘下", key=f"wear_{ach['id']}"):
-                                equip_badge_callback("{}") 
-                        else:
-                            if st.button("🟢 佩戴", key=f"wear_{ach['id']}"):
-                                equip_badge_callback(json.dumps({"name": ach['name'], "icon": ach['icon']}, ensure_ascii=False))
+            render_gallery_tab("大阿卡纳", t1)
+            render_gallery_tab("权杖", t2)
+            render_gallery_tab("圣杯", t3)
+            render_gallery_tab("宝剑", t4)
+            render_gallery_tab("星币", t5)
+        
+        # 3. 智慧典藏 (时光卷轴)
+        with st.expander("🏛️ 智慧典藏", expanded=True):
+            c1, c2, c3 = st.columns(3)
+            
+            def get_grouped_loot(loot_type):
+                groups = {}
+                for _, r in df.sort_values('日期', ascending=False).iterrows():
+                    try:
+                        loot = json.loads(r.get('每日奇遇_JSON', '{}'))
+                        item = loot.get(loot_type, {})
+                        if item.get('collected'):
+                            ym = r['日期'][:7]
+                            if ym not in groups: groups[ym] = []
+                            groups[ym].append((r['日期'], item))
+                    except: pass
+                return groups
+            
+            def render_column(col, title, type_key):
+                with col:
+                    st.markdown(f"#### {title}")
+                    groups = get_grouped_loot(type_key)
+                    if not groups:
+                        st.caption("暂无")
                     else:
-                        st.markdown(f"<div style='font-size: 40px; text-align: center; opacity: 0.3;'>{ach['icon']}</div>", unsafe_allow_html=True)
-                        st.markdown(f"**???**")
-                        st.caption(f"锁定中\n({ach['desc']})")
+                        is_first = True
+                        for ym, items in groups.items():
+                            with st.expander(f"📂 {ym}", expanded=is_first):
+                                is_first = False
+                                for d, item in items:
+                                    with st.container(border=True):
+                                        if type_key == 'rune':
+                                            st.markdown(f"**{item.get('title')}**")
+                                            st.info(item.get('desc'))
+                                        elif type_key == 'poem':
+                                            st.markdown(f"_{item.get('content')}_")
+                                            st.caption(f"—— {item.get('source')}")
+                                        else:
+                                            st.write(item.get('content'))
+                                        
+                                        st.caption(f"📅 {d}")
+                                        if st.button("移除", key=f"rm_{type_key}_{d}"): toggle_collection_callback(d, type_key)
 
-        st.divider()
-        
-        # === 2. 塔罗图鉴 (分页优化) ===
-        st.subheader("🎴 命运图鉴 (Tarot Gallery)")
-        
-        collected_cards = []
-        for _, r in df.iterrows():
-            try: collected_cards.extend(json.loads(r.get('卡牌掉落_JSON', '[]')))
-            except: pass
-        
-        card_counts = {i: 0 for i in range(78)}
-        for c in collected_cards:
-            cid = c.get('id')
-            if cid is not None and cid < 78: card_counts[cid] += 1
-        
-        tab_major, tab_wands, tab_cups, tab_swords, tab_pentacles = st.tabs(["大阿卡纳", "权杖", "圣杯", "宝剑", "星币"])
-        
-        def render_gallery(group_name, container):
-            group_cards = [c for c in TAROT_DATA if c.get('group','').startswith(group_name)]
-            with container:
-                cols = st.columns(6)
-                for i, card in enumerate(group_cards):
-                    cid = card['id']
-                    count = card_counts.get(cid, 0)
-                    is_owned = count > 0
-                    
-                    with cols[i % 6]:
-                        with st.container(border=True):
-                            if is_owned:
-                                st.markdown(f"<div class='tarot-roman'>{card['roman']}</div>", unsafe_allow_html=True)
-                                st.markdown(f"<div class='big-emoji'>{card['icon']}</div>", unsafe_allow_html=True)
-                                st.markdown(f"<div class='tarot-en'>{card['en']}</div>", unsafe_allow_html=True)
-                                st.markdown(f"<div class='tarot-cn'>{card['name']}</div>", unsafe_allow_html=True)
-                                st.markdown(f"<div class='tarot-meta'>{card['rarity']} · {card['prob']}</div>", unsafe_allow_html=True)
-                                
-                                color = "gray"
-                                if card['rarity'] == "SSR": color = "orange"
-                                elif card['rarity'] == "SR": color = "violet"
-                                elif card['rarity'] == "R": color = "blue"
-                                st.markdown(f":{color}[持有: {count}]")
-                            else:
-                                st.markdown(f"<div style='font-size: 40px; text-align: center; color: #ccc; margin-top: 20px;'>🔒</div>", unsafe_allow_html=True)
-                                st.caption("未解锁")
-        
-        render_gallery("大阿卡纳", tab_major)
-        render_gallery("权杖", tab_wands)
-        render_gallery("圣杯", tab_cups)
-        render_gallery("宝剑", tab_swords)
-        render_gallery("星币", tab_pentacles)
-
-        st.divider()
-        st.subheader("🏛️ 智慧典藏")
-        
-        c1, c2, c3 = st.columns(3)
-        runes = []
-        poems = []
-        trivias = []
-        
-        for _, r in df.sort_values('日期', ascending=False).iterrows():
-            try:
-                loot = json.loads(r.get('每日奇遇_JSON', '{}'))
-                d = r['日期']
-                if loot.get('rune', {}).get('collected'): runes.append((d, loot['rune']))
-                if loot.get('poem', {}).get('collected'): poems.append((d, loot['poem']))
-                if loot.get('trivia', {}).get('collected'): trivias.append((d, loot['trivia']))
-            except: pass
-        
-        def remove_collection(date_str, loot_type):
-            try:
-                df_curr = load_data()
-                target_date_str = pd.to_datetime(date_str).strftime('%Y-%m-%d')
-                mask_curr = df_curr['日期'] == target_date_str
-                if mask_curr.any():
-                    idx = df_curr[mask_curr].index[0]
-                    loot = json.loads(df_curr.at[idx, '每日奇遇_JSON'])
-                    if loot_type in loot:
-                        loot[loot_type]['collected'] = False
-                        df_curr.at[idx, '每日奇遇_JSON'] = json.dumps(loot, ensure_ascii=False)
-                        if '日期_dt' in df_curr.columns: del df_curr['日期_dt']
-                        df_curr.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
-                        st.rerun()
-            except: pass
-
-        with c1:
-            st.markdown("### 智慧符文")
-            if not runes: st.caption("暂无收藏")
-            for d, item in runes:
-                with st.container(border=True):
-                    st.markdown(f"**{item.get('title')}**")
-                    st.caption(f"📅 {d}")
-                    st.info(item.get('desc'))
-                    if st.button("移除", key=f"rm_rune_{d}", icon=":material/delete:"): remove_collection(d, 'rune')
-        
-        with c2:
-            st.markdown("### 吟游诗篇")
-            if not poems: st.caption("暂无收藏")
-            for d, item in poems:
-                with st.container(border=True):
-                    st.markdown(f"_{item.get('content')}_")
-                    st.caption(f"—— {item.get('source')} (📅 {d})")
-                    if st.button("移除", key=f"rm_poem_{d}", icon=":material/delete:"): remove_collection(d, 'poem')
-        
-        with c3:
-            st.markdown("### 异闻碎片")
-            if not trivias: st.caption("暂无收藏")
-            for d, item in trivias:
-                with st.container(border=True):
-                    st.write(item.get('content'))
-                    st.caption(f"📅 {d}")
-                    if st.button("移除", key=f"rm_trivia_{d}", icon=":material/delete:"): remove_collection(d, 'trivia')
+            render_column(c1, "🔮 符文", "rune")
+            render_column(c2, "📜 诗篇", "poem")
+            render_column(c3, "🧩 异闻", "trivia")
