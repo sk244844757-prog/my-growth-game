@@ -1,0 +1,5 @@
+streamlit
+pandas
+openai -i https://mirrors.aliyun.com/pypi/simple/
+altair
+plotly
