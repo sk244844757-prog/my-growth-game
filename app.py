@@ -33,8 +33,6 @@ st.markdown("""
             border-radius: 10px;
             padding: 5px;
             background-color: rgba(255, 215, 0, 0.1);
-            font-weight: bold;
-            color: #d4ac0d;
         }
         .big-emoji {
             font-size: 60px;
@@ -324,7 +322,7 @@ def load_data():
                 elif col == '深渊凝视_JSON': df[col] = "{}"
                 else: df[col] = "" 
         
-        # 核心修复：针对 JSON 列，如果为空字符串，强制设为合法 JSON
+        # 针对 JSON 列，如果为空字符串，强制设为合法 JSON
         json_dict_cols = ['佩戴成就_JSON', '深渊凝视_JSON', '每日奇遇_JSON']
         json_list_cols = ['卡牌掉落_JSON', '阅读数据_JSON', '已读列表_JSON', '印象标签_JSON']
         
@@ -817,18 +815,14 @@ def equip_badge_callback(badge_json_str):
     try:
         df = load_data()
         if not df.empty:
-            # 始终更新最新一天的数据
             idx = df.index[-1]
             current_wear_str = df.at[idx, '佩戴成就_JSON']
-            
-            # 切换佩戴状态
             if current_wear_str == badge_json_str:
-                new_wear = "{}" # 卸下
+                new_wear = "{}"
                 msg = "已摘下勋章"
             else:
                 new_wear = badge_json_str
                 msg = "勋章佩戴成功！"
-                
             df.at[idx, '佩戴成就_JSON'] = new_wear
             if '日期_dt' in df.columns: del df['日期_dt']
             df.to_csv(FILE_NAME, index=False, encoding='utf-8-sig')
@@ -868,7 +862,7 @@ with st.sidebar:
             user_base_url = default_base
             user_model = default_model
         
-        if st.button("测试连接", icon=":material/wifi:"):
+        if st.button("测试连接", icon="📶"):
             if not user_api_key:
                 st.error("请先填写 Key")
             else:
@@ -1012,7 +1006,7 @@ with st.sidebar:
                     st.caption(f"进度: {pct:.1%}")
                 if pct >= 0.9: st.checkbox("标记为已读完 (结算时归档)", key=f"finish_{i}_{select_date}")
                 st.session_state.reading_list[i]['note'] = st.text_area("阅读感悟", b['note'], height=50, key=f"n_{i}_{select_date}")
-                if st.button("移除", key=f"d_{i}", icon=":material/delete:"): del_idx.append(i)
+                if st.button("移除", key=f"d_{i}", icon="🗑️"): del_idx.append(i)
                 st.markdown("---")
             if del_idx:
                 for x in sorted(del_idx, reverse=True): del st.session_state.reading_list[x]
@@ -1023,7 +1017,7 @@ with st.sidebar:
         c1, c2 = st.columns(2)
         with c1: bt = st.number_input("总页数", 0, step=1, key="new_t")
         with c2: bc = st.number_input("当前页", 0, step=1, key="new_c")
-        if st.button("添加", icon=":material/add:"):
+        if st.button("添加", icon="➕"):
             if bn and bt>0:
                 st.session_state.reading_list.append({"name":bn, "total":bt, "current":bc, "note":""})
                 st.rerun()
@@ -1060,7 +1054,7 @@ with st.sidebar:
     st.markdown("---")
     achieve = st.text_input("每日总结 (必填)", placeholder="说说今天...", key="achieve_input")
     
-    if st.button("💾 存档 (计算属性)", type="primary", icon=":material/save:"):
+    if st.button("💾 存档 (计算属性)", type="primary", icon="💾"):
         if achieve:
             active_books = []
             finished_books = []
@@ -1147,7 +1141,10 @@ else:
             
         equipped_badge = ""
         try:
-            latest_wear = json.loads(df.iloc[-1].get('佩戴成就_JSON', '{}'))
+            # 核心修复：读取时如果为空字符串则使用默认 {}
+            wear_json = df.iloc[-1].get('佩戴成就_JSON', '{}')
+            if not wear_json or wear_json == "nan": wear_json = "{}"
+            latest_wear = json.loads(wear_json)
             if latest_wear:
                 equipped_badge = f" · <span class='badge-worn'>{latest_wear['icon']} {latest_wear['name']}</span>"
         except: pass
@@ -1279,6 +1276,34 @@ else:
                     st.button(btn_label, key="c_trivia", icon="🧩", disabled=is_c, on_click=toggle_collection_callback, args=(select_date, 'trivia'))
 
         st.divider()
+        # === 已学技能 (完结书籍) ===
+        st.subheader("已学技能 (完结书籍)")
+        finished_lib = []
+        for _, r in df.iterrows():
+            try:
+                for b in json.loads(r.get('已读列表_JSON', '[]')):
+                    if not any(fb['name'] == b['name'] for fb in finished_lib):
+                        finished_lib.append(b)
+            except: pass
+        if finished_lib:
+            for book in finished_lib:
+                with st.expander(f"《{book['name']}》 (完结于 {book.get('finish_date','?')})"):
+                    b_hist_df = get_book_history(df, book['name'])
+                    if not b_hist_df.empty:
+                        c_stat, c_chart = st.columns([1, 2])
+                        with c_stat:
+                            st.write(f"阅读天数: {len(b_hist_df)}")
+                            st.write(f"感悟条数: {len(b_hist_df[b_hist_df['感悟']!=''])}")
+                        with c_chart:
+                            chart = alt.Chart(b_hist_df).mark_line(point=True).encode(x=alt.X('日期_dt:T',axis=alt.Axis(format='%m-%d')),y='页数:Q').properties(height=200)
+                            st.altair_chart(chart, use_container_width=True)
+                        st.caption("感悟时间轴:")
+                        for _, r in b_hist_df.iterrows():
+                            if r['感悟']: st.text(f"{r['日期_dt'].strftime('%m-%d')}: {r['感悟']}")
+        else:
+            st.caption("暂无完结书籍")
+
+        st.divider()
         st.subheader("属性成长趋势")
         df_cum = df.copy()
         for k in COLS_STATS: df_cum[k] = df_cum[k].astype(float).cumsum()
@@ -1373,7 +1398,7 @@ else:
                 
                 hm = alt.Chart(df_cal).mark_rect().encode(
                     x=alt.X('weekday:O', axis=alt.Axis(labelExpr="['一','二','三','四','五','六','日'][datum.value]", title='')),
-                    y=alt.Y('week:O', axis=None, title=None),
+                    y=alt.Y('week:O', axis=None),
                     color=alt.condition(
                         'datum.has',
                         alt.Color('hp:Q', scale=alt.Scale(scheme='greens'), legend=None),
@@ -1386,7 +1411,6 @@ else:
                 evt = st.altair_chart(hm, use_container_width=True, on_select="rerun")
                 
                 sel_d = None
-                # 适配 Streamlit 新版选择器逻辑
                 if hasattr(evt, "selection") and "select_date" in evt.selection:
                     try:
                         sel_data = evt.selection["select_date"]
@@ -1437,7 +1461,7 @@ else:
                                   st.markdown("---")
                                   st.subheader("🌀 深渊凝视记录")
                                   st.write(f"**凝视对象**: {abyss_data.get('boss_name', '未知')}")
-                                  if 'question' in abyss_data: # 兼容旧数据，新数据会带
+                                  if 'question' in abyss_data:
                                        st.caption(f"**试炼问题**: {abyss_data['question']}")
                                   if 'answer' in abyss_data:
                                        st.info(f"**你的回应**: {abyss_data['answer']}")
